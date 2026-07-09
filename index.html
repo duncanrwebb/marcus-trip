@@ -30,6 +30,11 @@
   .tab-panel.active { display:block; }
   h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
   #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; }
+  @media (pointer: fine) {
+    #map { resize:vertical; overflow:hidden; min-height:300px; max-height:85vh; }
+  }
+  .map-resize-hint { display:none; font-size:11.5px; color:#948C79; text-align:right; margin:4px 2px 0; }
+  @media (pointer: fine) { .map-resize-hint { display:block; } }
   .map-controls { background:#FBF8F1; border:1.5px solid #E4DCC8; border-top:none; border-bottom-left-radius:16px; border-bottom-right-radius:16px; padding:12px 14px; margin-top:-1px; }
   .map-controls .chip-row { display:flex; flex-wrap:wrap; gap:8px; }
   .map-controls .chip { display:flex; align-items:center; gap:6px; font-size:16px; padding:11px 14px; border-radius:22px; border:1.5px solid #C9BFA6; background:#fff; cursor:pointer; user-select:none; min-height:44px; }
@@ -44,6 +49,8 @@
   .leaflet-popup-content { font-family:'Inter',sans-serif; font-size:16px; max-width:200px; }
   .leaflet-popup-content b { font-family:'Fraunces',serif; font-size:17px; }
   .day-row { display:flex; gap:14px; margin-bottom:12px; }
+  .past-days-toggle { display:block; width:100%; text-align:left; background:#FBF8F1; border:1.5px dashed #C9BFA6; border-radius:12px; padding:12px 16px; font-size:14px; font-weight:600; color:#6B6455; cursor:pointer; margin-bottom:12px; font-family:'Inter',sans-serif; min-height:44px; }
+  .past-days-toggle:hover { border-color:#1B4332; color:#1B4332; }
   .dot { flex-shrink:0; width:34px; height:34px; border-radius:50%; border:2px solid #1B4332; background:#fff; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .dot.today { background:#1B4332; color:#fff; }
   .dot.past { background:#B8AE99; border-color:#B8AE99; }
@@ -102,9 +109,9 @@
   .info-card p, .info-card .placeholder { font-size:15px; line-height:1.6; margin:0 0 8px; color:#3A3F3B; white-space:pre-wrap; }
   .info-card .placeholder { color:#6B6455; font-style:italic; }
   .info-card textarea, .info-card input[type=url] { width:100%; border-radius:8px; border:1.5px solid #C9BFA6; padding:8px 10px; font-size:15px; font-family:'Inter',sans-serif; resize:vertical; margin-bottom:8px; box-sizing:border-box; }
-  .info-card .card-btn { background:#1B4332; color:#F6F1E7; border:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; cursor:pointer; min-height:40px; }
-  .info-card .card-btn.secondary { background:none; color:#1B4332; border:1.5px solid #1B4332; }
-  .info-card .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
+  .card-btn { background:#1B4332; color:#F6F1E7; border:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; cursor:pointer; min-height:40px; }
+  .card-btn.secondary { background:none; color:#1B4332; border:1.5px solid #1B4332; }
+  .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
 
   .wa-link { font-size:14px; font-weight:600; text-decoration:none; color:#3F7248; margin-left:14px; }
   .flight-row { border-top:1px solid #E4DCC8; padding:12px 0; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
@@ -162,6 +169,7 @@
   <section class="tab-panel" data-tab="map" role="tabpanel" aria-labelledby="tabbtn-map">
     <h3 class="section" style="margin-top:0;">Route map</h3>
     <div id="map" role="application" aria-label="Interactive route map of the expedition through Cambodia and Vietnam. Numbered markers show stops in travel order. The same information is available in the itinerary tab."></div>
+    <p class="map-resize-hint">↕ drag the bottom-right corner to resize</p>
     <div id="mapControls" class="map-controls"></div>
   </section>
 
@@ -216,6 +224,11 @@ const PRONOUNS = {
   they: { subj:"they", Subj:"They", obj:"them", poss:"their", Poss:"Their", be:"they're", Be:"They're", will:"they'll", wouldC:"they'd", was:"were" },
 };
 const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
+const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
+function getLiveTrackerUrl(){
+  const saved = localStorage.getItem("live-tracker-url");
+  return saved !== null ? saved : DEFAULT_LIVE_TRACKER;
+}
 document.title = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
 try {
   const manifestLink = document.querySelector('link[rel="manifest"]');
@@ -488,6 +501,10 @@ if (currentDay && status==="during"){
 (function(){
   const el = document.getElementById("trekProgress");
   const firstTrekDay = 12, lastTrekDay = 15;
+  const liveUrl = getLiveTrackerUrl();
+  const trackerBtn = liveUrl
+    ? `<a class="card-btn link" style="background:#3F7248;display:inline-block;margin-top:10px;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a><p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} has no phone signal in the jungle, but the satellite tracker still updates — this is the most reliable way to see real progress during trek days.</p>`
+    : "";
   if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
     el.innerHTML = `
       <div class="trek-progress">
@@ -495,6 +512,7 @@ if (currentDay && status==="during"){
         <p class="trek-sub">28–31 Jul · 74km over four days through jungle — nearly two marathons. Progress will appear here once he starts.</p>
         <div class="trek-track"><div class="trek-fill" style="width:0%"></div></div>
         <div class="trek-stats"><span>0 km</span><span>74 km</span></div>
+        ${trackerBtn}
         <p class="trek-note">Guides from the Chi Phat community lead throughout, with an Asia Adventures staff member accompanying the team the whole way. If weather or fitness needs change the route, the school and True Adventure's Operations Room are informed directly — the plan here may not always match in real time.</p>
       </div>`;
     return;
@@ -522,6 +540,7 @@ if (currentDay && status==="during"){
         <div class="trek-boots" style="left:${Math.max(3,Math.min(97,pct))}%">🥾</div>
       </div>
       <div class="trek-stats"><span>${km} km trekked</span><span>${TREK_TOTAL} km total</span></div>
+      ${trackerBtn}
       <p class="trek-note">Guides from Chi Phat lead throughout, with an Asia Adventures staff member accompanying the whole route — if the plan changes on the ground, True Adventure's Operations Room is informed directly.</p>
     </div>`;
 })();
@@ -540,6 +559,16 @@ const map = L.map('map', { scrollWheelZoom:false, closePopupOnClick:true });
 L.Popup.mergeOptions({ closeButton:false });
 // Leaflet's zoom +/- controls are also anchors — strip their hrefs so no viewer treats them as links
 map.whenReady(()=>{ document.querySelectorAll('.leaflet-control-zoom a').forEach(a=>a.removeAttribute('href')); });
+// when the map is manually resized (drag handle, desktop only), Leaflet needs telling to
+// re-measure itself and redraw — otherwise the map view stays cropped to its old size
+if (typeof ResizeObserver !== "undefined"){
+  let resizeDebounce;
+  const mapEl = document.getElementById("map");
+  new ResizeObserver(()=>{
+    clearTimeout(resizeDebounce);
+    resizeDebounce = setTimeout(()=>{ try { map.invalidateSize(); } catch(e){} }, 120);
+  }).observe(mapEl);
+}
 
 const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
   attribution:'&copy; <a href="https://www.esri.com">Esri</a> &copy; OpenStreetMap contributors', maxZoom:18
@@ -612,10 +641,14 @@ const phaseLayers = {};
 Object.keys(PHASES).forEach(k=>{ phaseLayers[k] = L.layerGroup().addTo(map); });
 
 // one coloured polyline segment per leg, coloured by the phase of the day it leads into,
-// so the route itself reads as a coloured timeline, oldest to newest
+// so the route itself reads as a coloured timeline, oldest to newest.
+// Each line gets a white "halo" drawn underneath first — on its own the darker phase colours
+// (jungle green, slate blue) can nearly vanish against satellite imagery, so the halo keeps
+// the route visible regardless of which basemap is showing.
 for (let i=0; i<latlngs.length-1; i++){
   const legPhaseKey = MAP_DAYS[i+1].phase;
-  L.polyline([latlngs[i], latlngs[i+1]], { color: PHASES[legPhaseKey].color, weight:4, opacity:.75 }).addTo(phaseLayers[legPhaseKey]);
+  L.polyline([latlngs[i], latlngs[i+1]], { color:'#ffffff', weight:7, opacity:.85 }).addTo(phaseLayers[legPhaseKey]);
+  L.polyline([latlngs[i], latlngs[i+1]], { color: PHASES[legPhaseKey].color, weight:4.5, opacity:1 }).addTo(phaseLayers[legPhaseKey]);
 }
 
 // numbered stop markers - the number is the order of travel (1 = first, N = last)
@@ -670,7 +703,8 @@ controlsEl.querySelectorAll('input[data-phase]').forEach(cb=>{
 
 /* ---------------- Timeline ---------------- */
 const timelineEl = document.getElementById("timeline");
-DAYS.forEach(d=>{
+
+function buildDayRow(d){
   const p = PHASES[d.phase];
   const isPast = currentDayNum>d.n && status!=="before";
   const isToday = d.n===currentDayNum && status==="during";
@@ -706,8 +740,39 @@ DAYS.forEach(d=>{
   card.addEventListener("click", toggle);
   card.addEventListener("keydown", (e)=>{ if (e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
   if (isToday) body.classList.add("open");
-  timelineEl.appendChild(row);
-});
+  return row;
+}
+
+// Once the trip is underway, days that have already happened get folded into a single
+// collapsed block instead of always listing all 19 — otherwise the list only gets longer
+// and more tedious to scroll past as the trip goes on. Today and future days always show
+// individually. Before the trip starts, or once it's finished, nothing is collapsed.
+const pastDays = status==="during" ? DAYS.filter(d=>d.n<currentDayNum) : [];
+const restDays = status==="during" ? DAYS.filter(d=>d.n>=currentDayNum) : DAYS;
+
+if (pastDays.length > 0){
+  const wrap = document.createElement("div");
+  wrap.className = "past-days-wrap";
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "past-days-toggle";
+  toggleBtn.setAttribute("aria-expanded", "false");
+  toggleBtn.textContent = `▸ Show ${pastDays.length} earlier ${pastDays.length===1?"day":"days"} (already happened)`;
+  const pastList = document.createElement("div");
+  pastList.className = "past-days-list";
+  pastList.hidden = true;
+  pastDays.forEach(d=> pastList.appendChild(buildDayRow(d)));
+  toggleBtn.addEventListener("click", ()=>{
+    const open = pastList.hidden;
+    pastList.hidden = !open;
+    toggleBtn.setAttribute("aria-expanded", String(open));
+    toggleBtn.textContent = `${open?"▾ Hide":"▸ Show"} ${pastDays.length} earlier ${pastDays.length===1?"day":"days"} (already happened)`;
+  });
+  wrap.appendChild(toggleBtn);
+  wrap.appendChild(pastList);
+  timelineEl.appendChild(wrap);
+}
+restDays.forEach(d=> timelineEl.appendChild(buildDayRow(d)));
 
 /* ---------------- Family notes (localStorage) ---------------- */
 const PROMPTS = [
@@ -804,9 +869,14 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
   function flightsHTML(){
     let prevArr = null;
-    const rows = FLIGHTS.map(f=>{
+    const withStatus = FLIGHTS.map(f=>{
       const st = flightStatus(f, prevArr);
       prevArr = new Date(f.arr);
+      return { f, st };
+    });
+    const upcoming = withStatus.filter(({st}) => st.cls !== "done");
+    if (upcoming.length === 0) return ""; // all flights landed — nothing left to track
+    const rows = upcoming.map(({f, st})=>{
       const depStr = f.dep ? new Date(f.dep).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
       const arrStr = new Date(f.arr).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
       const isLive = st.cls === "live";
@@ -821,6 +891,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     }).join("");
     return `<div class="info-card">
       <h4>✈️ Flights</h4>
+      ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
       <p class="placeholder" style="margin-bottom:10px;">Status here is estimated from the published schedule, not live data. Tap "Track live" on any flight for the real position via Flightradar24 — most useful once it's actually in the air.</p>
       ${rows}
     </div>`;
@@ -842,9 +913,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function trackerHTML(editing){
-    const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
-    const saved = localStorage.getItem("live-tracker-url");
-    const liveUrl = saved !== null ? saved : DEFAULT_LIVE_TRACKER;
+    const liveUrl = getLiveTrackerUrl();
     if (editing){
       return `<div class="info-card">
         <h4>🛰 True Adventure Portal</h4>
@@ -926,18 +995,18 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function render(){
-    el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
+    el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
     bindTopLevel();
   }
   function bindTopLevel(){
     const editPe = document.getElementById("editPerson");
-    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(true) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
     const editTr = document.getElementById("editTracker");
-    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
     const editEm = document.getElementById("editEmergency");
-    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
     const editPh = document.getElementById("editPhoto");
-    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
   }
   function bindEditing(){
     const savePe = document.getElementById("savePerson");
