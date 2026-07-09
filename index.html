@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>Marcus's Expedition Log</title>
+<title>Expedition Log</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <link rel="manifest" href="data:application/json,{%22name%22:%22Marcus%27s%20Expedition%20Log%22,%22short_name%22:%22Expedition%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F6F1E7%22,%22theme_color%22:%221B4332%22}" />
 <style>
@@ -125,7 +125,7 @@
 
 <header class="hero">
   <span class="eyebrow">George Abbot School · True Adventure</span>
-  <h1 class="title" id="pageTitle">Marcus's Expedition Log</h1>
+  <h1 class="title" id="pageTitle">Expedition Log</h1>
   <p class="subtitle">Vietnam &amp; Cambodia · 17 Jul – 4 Aug 2026</p>
   <div class="progress-label" id="progressLabel"></div>
   <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
@@ -194,8 +194,10 @@ const TRIP_END = "2026-08-04";
 // Defaults to Marcus/he so this exact file keeps working as-is. Any family can change this
 // via the "Whose trip is this?" card in the Info tab — no code editing needed.
 function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-const NAME = (localStorage.getItem("traveler-name") || "Marcus").trim() || "Marcus";
+const NAME_STORED = localStorage.getItem("traveler-name");
+const NAME = (NAME_STORED || "Marcus").trim() || "Marcus";
 const NAME_SAFE = escapeHtml(NAME);
+const IS_DEFAULT = !NAME_STORED;  // true when nobody has personalised this copy yet
 const PRONOUN_KEY = localStorage.getItem("traveler-pronoun") || "he";
 const PRONOUNS = {
   he:   { subj:"he",   Subj:"He",   obj:"him",  poss:"his",   Poss:"His",   be:"he's",    Be:"He's",    will:"he'll",   wouldC:"he'd",   was:"was" },
@@ -203,15 +205,16 @@ const PRONOUNS = {
   they: { subj:"they", Subj:"They", obj:"them", poss:"their", Poss:"Their", be:"they're", Be:"They're", will:"they'll", wouldC:"they'd", was:"were" },
 };
 const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
-document.title = `${NAME}'s Expedition Log`;
+document.title = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
 try {
   const manifestLink = document.querySelector('link[rel="manifest"]');
   if (manifestLink) {
-    const manifest = { name:`${NAME}'s Expedition Log`, short_name:"Expedition", start_url:".", display:"standalone", background_color:"#F6F1E7", theme_color:"#1B4332" };
+    const appName = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
+    const manifest = { name: appName, short_name:"Expedition", start_url:".", display:"standalone", background_color:"#F6F1E7", theme_color:"#1B4332" };
     manifestLink.href = "data:application/json," + encodeURIComponent(JSON.stringify(manifest));
   }
 } catch(e){}
-document.getElementById("pageTitle").textContent = `${NAME}'s Expedition Log`;
+document.getElementById("pageTitle").textContent = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
 document.getElementById("messagesHeading").textContent = `Leave ${NAME} a message`;
 document.getElementById("notesHint").textContent = `${P.Subj} won't see these until ${P.be} back — a nice record of what the family got up to while ${P.subj} ${P.was} away.`;
 document.getElementById("noteInput").setAttribute("aria-label", `Message for ${NAME}`);
