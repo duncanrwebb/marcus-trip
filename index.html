@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Expedition Log</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="manifest" href="data:application/json,{%22name%22:%22Marcus%27s%20Expedition%20Log%22,%22short_name%22:%22Expedition%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F6F1E7%22,%22theme_color%22:%221B4332%22}" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; font-family:'Inter',sans-serif; background:#F6F1E7; color:#1F2421; padding-bottom:40px; }
+  a { color:#A63D40; }
+  .hero { background:linear-gradient(180deg,#1B4332 0%,#123324 100%); color:#F6F1E7; padding:28px 20px 24px; border-bottom-left-radius:28px; border-bottom-right-radius:28px; }
+  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:1.5px; text-transform:uppercase; color:#C9A66B; }
+  h1.title { font-family:'Fraunces',serif; font-size:34px; font-weight:700; margin:6px 0 4px; line-height:1.1; }
+  .subtitle { font-size:17px; opacity:.85; margin:0 0 16px; }
+  .banner { background:rgba(201,166,107,.15); border:1px solid rgba(201,166,107,.4); border-radius:12px; padding:10px 14px; font-size:16px; line-height:1.5; margin-bottom:16px; }
+  .progress-label { font-family:'JetBrains Mono',monospace; font-size:16px; margin-bottom:6px; }
+  .progress-track { height:8px; background:rgba(255,255,255,.15); border-radius:8px; overflow:hidden; }
+  .progress-fill { height:100%; background:#C9A66B; border-radius:8px; transition:width .4s ease; }
+  main { padding:22px 16px 0; max-width:640px; margin:0 auto; }
+
+  .tabbar { position:sticky; top:0; z-index:20; display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:#F6F1E7; border-bottom:1.5px solid #E4DCC8; padding:10px 12px; scrollbar-width:none; }
+  .tabbar::-webkit-scrollbar { display:none; }
+  .tab-btn { flex-shrink:0; background:#fff; border:1.5px solid #C9BFA6; border-radius:20px; padding:9px 16px; font-size:14px; font-weight:600; color:#3A3F3B; cursor:pointer; min-height:44px; font-family:'Inter',sans-serif; white-space:nowrap; }
+  .tab-btn[aria-selected="true"] { background:#1B4332; border-color:#1B4332; color:#F6F1E7; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
+  #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; }
+  .map-controls { background:#FBF8F1; border:1.5px solid #E4DCC8; border-top:none; border-bottom-left-radius:16px; border-bottom-right-radius:16px; padding:12px 14px; margin-top:-1px; }
+  .map-controls .chip-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .map-controls .chip { display:flex; align-items:center; gap:6px; font-size:16px; padding:11px 14px; border-radius:22px; border:1.5px solid #C9BFA6; background:#fff; cursor:pointer; user-select:none; min-height:44px; }
+  .map-controls .chip.off { opacity:.45; text-decoration:line-through; }
+  .map-controls .chip input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; clip:rect(0 0 0 0); }
+  .map-controls .chip:focus-within { outline:3px solid #1B4332; outline-offset:2px; }
+  a:focus-visible, button:focus-visible, textarea:focus-visible, .day-card:focus-visible, .dot:focus-visible { outline:3px solid #1B4332; outline-offset:2px; border-radius:6px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+  }
+  .map-controls .hint { font-size:14px; color:#6B6455; margin:0 0 8px; }
+  .leaflet-popup-content { font-family:'Inter',sans-serif; font-size:16px; max-width:200px; }
+  .leaflet-popup-content b { font-family:'Fraunces',serif; font-size:17px; }
+  .day-row { display:flex; gap:14px; margin-bottom:12px; }
+  .dot { flex-shrink:0; width:34px; height:34px; border-radius:50%; border:2px solid #1B4332; background:#fff; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .dot.today { background:#1B4332; color:#fff; }
+  .dot.past { background:#B8AE99; border-color:#B8AE99; }
+  .day-card { flex:1; background:#FBF8F1; border:1.5px solid #C9BFA6; border-radius:14px; padding:12px 14px; cursor:pointer; }
+  .day-card.today { border-color:#1B4332; }
+  .day-head { display:flex; justify-content:space-between; font-size:14px; }
+  .day-date { font-family:'JetBrains Mono',monospace; color:#6B6455; }
+  .phase-tag { font-weight:600; }
+  .day-loc { font-size:18px; font-weight:600; margin-top:4px; }
+  .day-body { margin-top:10px; display:none; }
+  .day-body.open { display:block; }
+  .day-photo { width:100%; height:130px; object-fit:cover; border-radius:10px; margin-bottom:8px; }
+  .day-summary { font-size:16px; line-height:1.5; margin:0 0 8px; color:#3A3F3B; }
+  .map-link { font-size:15px; font-weight:600; text-decoration:none; }
+  .notes-section { margin-top:26px; background:#FBF8F1; border:1.5px solid #E4DCC8; border-radius:16px; padding:18px; }
+  .notes-hint { font-size:16px; color:#6B6455; line-height:1.5; }
+  #printHeading { display:none; }
+  .note-input-row { display:flex; gap:8px; margin:8px 0 14px; }
+  textarea#noteInput { flex:1; border-radius:10px; border:1.5px solid #E4DCC8; padding:10px; font-size:16px; font-family:'Inter',sans-serif; resize:vertical; }
+  button#saveNote { background:#1B4332; color:#F6F1E7; border:none; border-radius:10px; padding:0 20px; font-weight:600; font-size:17px; cursor:pointer; min-height:44px; }
+  .note-item { background:#fff; border-radius:10px; padding:8px 12px; border:1px solid #E4DCC8; margin-bottom:8px; }
+  .note-date { font-size:14px; color:#6B6455; margin-top:4px; font-family:'JetBrains Mono',monospace; }
+  footer { text-align:center; font-size:15px; color:#6B6455; margin-top:26px; line-height:1.5; }
+  .current-card { background:#fff; color:#1F2421; border-radius:18px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .current-card img { width:100%; height:150px; object-fit:cover; display:block; }
+  .current-card .inner { padding:16px; }
+  .phase-pill { display:inline-block; color:#fff; font-size:14px; font-weight:600; padding:3px 10px; border-radius:20px; margin-bottom:8px; }
+  .current-loc { font-family:'Fraunces',serif; font-size:24px; margin:0 0 6px; }
+  @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(201,166,107,.6); } 50%{ box-shadow:0 0 0 8px rgba(201,166,107,0); } }
+  .countdown-row { display:flex; gap:10px; margin:14px 0 0; }
+  .countdown-box { flex:1; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 12px; text-align:center; }
+  .countdown-num { font-family:'Fraunces',serif; font-size:25px; font-weight:700; color:#C9A66B; line-height:1.1; white-space:nowrap; }
+  .countdown-lbl { font-size:14px; opacity:.8; margin-top:4px; }
+  .there-now { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 14px; margin-top:10px; font-size:16px; line-height:1.5; }
+  .there-now .tn-head { font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:1px; text-transform:uppercase; color:#C9A66B; margin-bottom:3px; }
+  .fun-fact { background:#FFF9EC; border:1.5px dashed #C9A66B; border-radius:10px; padding:8px 12px; font-size:15px; line-height:1.5; margin-top:8px; }
+  .fun-fact b { color:#8A6D3B; }
+  .prompt-chip { display:inline-block; background:#fff; border:1.5px solid #C9BFA6; border-radius:22px; padding:11px 14px; font-size:16px; color:#3A3F3B; cursor:pointer; margin-bottom:8px; min-height:44px; }
+  .prompt-chip:hover { border-color:#C9A66B; }
+  .key-dates { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+  .key-date { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:7px 12px; font-size:15px; }
+  .key-date.done { opacity:.45; text-decoration:line-through; }
+  .key-date .kd-when { font-family:'JetBrains Mono',monospace; font-size:14px; color:#C9A66B; white-space:nowrap; }
+  .right-now { background:#EFF5EF; border-left:4px solid #3F7248; border-radius:8px; padding:8px 12px; font-size:16px; line-height:1.5; margin:8px 0; }
+  .trek-progress { background:#FBF8F1; border:1.5px solid #E4DCC8; border-radius:16px; padding:16px 18px; margin-top:22px; }
+  .trek-progress h4 { font-family:'Fraunces',serif; font-size:19px; margin:0 0 4px; }
+  .trek-sub { font-size:14px; color:#575147; margin:0 0 10px; }
+  .trek-track { height:14px; background:#E4DCC8; border-radius:10px; overflow:hidden; position:relative; }
+  .trek-fill { height:100%; background:linear-gradient(90deg,#3F7248,#1B4332); border-radius:10px; transition:width .5s ease; }
+  .trek-boots { position:absolute; top:-4px; font-size:18px; transform:translateX(-50%); transition:left .5s ease; }
+  .trek-stats { display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:14px; color:#6B6455; margin-top:6px; }
+  .trek-note { font-size:12.5px; color:#6B6455; line-height:1.5; margin:10px 0 0; padding-top:8px; border-top:1px dashed #C9BFA6; }
+
+  .info-card { background:#FBF8F1; border:1.5px solid #C9BFA6; border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  .info-card h4 { font-family:'Fraunces',serif; font-size:16px; margin:0 0 6px; display:flex; align-items:center; gap:6px; }
+  .info-card p, .info-card .placeholder { font-size:15px; line-height:1.6; margin:0 0 8px; color:#3A3F3B; white-space:pre-wrap; }
+  .info-card .placeholder { color:#6B6455; font-style:italic; }
+  .info-card textarea, .info-card input[type=url] { width:100%; border-radius:8px; border:1.5px solid #C9BFA6; padding:8px 10px; font-size:15px; font-family:'Inter',sans-serif; resize:vertical; margin-bottom:8px; box-sizing:border-box; }
+  .info-card .card-btn { background:#1B4332; color:#F6F1E7; border:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; cursor:pointer; min-height:40px; }
+  .info-card .card-btn.secondary { background:none; color:#1B4332; border:1.5px solid #1B4332; }
+  .info-card .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
+
+  .wa-link { font-size:14px; font-weight:600; text-decoration:none; color:#3F7248; margin-left:14px; }
+  .flight-row { border-top:1px solid #E4DCC8; padding:10px 0; font-size:14px; }
+  .flight-row:first-of-type { border-top:none; padding-top:0; }
+  .flight-main { font-size:15px; }
+  .flight-times { color:#6B6455; font-family:'JetBrains Mono',monospace; font-size:12.5px; margin-top:3px; }
+  .flight-status { font-weight:600; margin-top:3px; font-size:13px; }
+  .flight-row.live .flight-status { color:#3F7248; }
+  .flight-row.done .flight-status { color:#8A6D3B; }
+
+  .notes-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .ghost-btn { background:#fff; border:1.5px solid #C9BFA6; border-radius:10px; padding:9px 14px; font-size:14px; font-weight:600; color:#1B4332; cursor:pointer; min-height:44px; }
+
+  @media print {
+    header, .tabbar, #infoCards, #map, .map-controls, #trekProgress, h3.section, #timeline, .note-input-row, #promptChip, .notes-actions, footer { display:none !important; }
+    .tab-panel { display:none !important; }
+    .tab-panel[data-tab="messages"] { display:block !important; }
+    .notes-section { border:none; background:none; padding:0; }
+    #printHeading { display:block !important; font-family:'Fraunces',serif; font-size:22px; margin-bottom:14px; }
+    .note-item { break-inside:avoid; border:1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="eyebrow">George Abbot School · True Adventure</span>
+  <h1 class="title" id="pageTitle">Expedition Log</h1>
+  <p class="subtitle">Vietnam &amp; Cambodia · 17 Jul – 4 Aug 2026</p>
+  <div class="progress-label" id="progressLabel"></div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div id="countdownRow" class="countdown-row"></div>
+  <div id="thereNow" class="there-now"></div>
+  <div id="keyDates" class="key-dates"></div>
+  <div id="currentCard"></div>
+</header>
+
+<nav class="tabbar" id="tabbar" role="tablist" aria-label="App sections">
+  <button type="button" class="tab-btn" role="tab" data-tab="info" id="tabbtn-info">ℹ️ Info</button>
+  <button type="button" class="tab-btn" role="tab" data-tab="map" id="tabbtn-map">🗺️ Map</button>
+  <button type="button" class="tab-btn" role="tab" data-tab="trek" id="tabbtn-trek">🥾 Trek</button>
+  <button type="button" class="tab-btn" role="tab" data-tab="itinerary" id="tabbtn-itinerary">📅 Itinerary</button>
+  <button type="button" class="tab-btn" role="tab" data-tab="messages" id="tabbtn-messages">💬 Messages</button>
+</nav>
+
+<main>
+  <section class="tab-panel" data-tab="info" role="tabpanel" aria-labelledby="tabbtn-info">
+    <div id="infoCards"></div>
+  </section>
+
+  <section class="tab-panel" data-tab="map" role="tabpanel" aria-labelledby="tabbtn-map">
+    <h3 class="section" style="margin-top:0;">Route map</h3>
+    <div id="map" role="application" aria-label="Interactive route map of the expedition through Cambodia and Vietnam. Numbered markers show stops in travel order. The same information is available in the itinerary tab."></div>
+    <div id="mapControls" class="map-controls"></div>
+  </section>
+
+  <section class="tab-panel" data-tab="trek" role="tabpanel" aria-labelledby="tabbtn-trek">
+    <div id="trekProgress"></div>
+  </section>
+
+  <section class="tab-panel" data-tab="itinerary" role="tabpanel" aria-labelledby="tabbtn-itinerary">
+    <h3 class="section" style="margin-top:0;">Full itinerary</h3>
+    <div id="timeline"></div>
+  </section>
+
+  <section class="tab-panel" data-tab="messages" role="tabpanel" aria-labelledby="tabbtn-messages">
+    <div class="notes-section">
+      <div id="printHeading"></div>
+      <h3 class="section" id="messagesHeading" style="margin-top:0;">Leave Marcus a message</h3>
+      <p class="notes-hint" id="notesHint">He won't see these until he's back — a nice record of what the family got up to while he was away.</p>
+      <div id="promptChip"></div>
+      <div class="note-input-row">
+        <textarea id="noteInput" rows="2" aria-label="Message for Marcus" placeholder="e.g. something funny that happened today, missing you!"></textarea>
+        <button id="saveNote" aria-label="Save message for Marcus">Save</button>
+      </div>
+      <div id="notesList"></div>
+      <div class="notes-actions">
+        <button type="button" id="exportNotes" class="ghost-btn">⬇ Export as text</button>
+        <button type="button" id="printNotes" class="ghost-btn">🖨 Print keepsake</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>Built from the George Abbot School Team 2 True Adventure itinerary. Always defer to True Adventure / the school for any live changes.</footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ---------------- Data ---------------- */
+const TRIP_START = "2026-07-17";
+const TRIP_END = "2026-08-04";
+
+/* ---------------- Personalization (name & pronouns) ---------------- */
+// Defaults to Marcus/he so this exact file keeps working as-is. Any family can change this
+// via the "Whose trip is this?" card in the Info tab — no code editing needed.
+function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+const NAME_STORED = localStorage.getItem("traveler-name");
+const NAME = (NAME_STORED || "Marcus").trim() || "Marcus";
+const NAME_SAFE = escapeHtml(NAME);
+const IS_DEFAULT = !NAME_STORED;  // true when nobody has personalised this copy yet
+const PRONOUN_KEY = localStorage.getItem("traveler-pronoun") || "he";
+const PRONOUNS = {
+  he:   { subj:"he",   Subj:"He",   obj:"him",  poss:"his",   Poss:"His",   be:"he's",    Be:"He's",    will:"he'll",   wouldC:"he'd",   was:"was" },
+  she:  { subj:"she",  Subj:"She",  obj:"her",  poss:"her",   Poss:"Her",   be:"she's",   Be:"She's",   will:"she'll",  wouldC:"she'd",  was:"was" },
+  they: { subj:"they", Subj:"They", obj:"them", poss:"their", Poss:"Their", be:"they're", Be:"They're", will:"they'll", wouldC:"they'd", was:"were" },
+};
+const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
+document.title = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
+try {
+  const manifestLink = document.querySelector('link[rel="manifest"]');
+  if (manifestLink) {
+    const appName = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
+    const manifest = { name: appName, short_name:"Expedition", start_url:".", display:"standalone", background_color:"#F6F1E7", theme_color:"#1B4332" };
+    manifestLink.href = "data:application/json," + encodeURIComponent(JSON.stringify(manifest));
+  }
+} catch(e){}
+document.getElementById("pageTitle").textContent = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
+document.getElementById("messagesHeading").textContent = `Leave ${NAME} a message`;
+document.getElementById("notesHint").textContent = `${P.Subj} won't see these until ${P.be} back — a nice record of what the family got up to while ${P.subj} ${P.was} away.`;
+document.getElementById("noteInput").setAttribute("aria-label", `Message for ${NAME}`);
+document.getElementById("saveNote").setAttribute("aria-label", `Save message for ${NAME}`);
+document.getElementById("printHeading").textContent = `Messages for ${NAME} — George Abbot True Adventure 2026`;
+
+const PHASES = {
+  travel:  { label:"Travel day",        color:"#6B7A8F", text:"#47525F", icon:"✈" },
+  culture: { label:"Culture & city",    color:"#A63D40", text:"#8A3336", icon:"⛩" },
+  project: { label:"Community project", color:"#3F7248", text:"#335C3A", icon:"🌱" },
+  trek:    { label:"Jungle trek",       color:"#1B4332", text:"#1B4332", icon:"🥾" },
+  border:  { label:"Border crossing",   color:"#8A6D3B", text:"#6E5730", icon:"🛂" },
+  home:    { label:"Home",              color:"#A63D40", text:"#8A3336", icon:"🏡" },
+};
+
+const PHOTOS = {
+  gatwick:"https://lh3.googleusercontent.com/place-photos/AJRVUZOmkPr7mYtA97y2rCXDntKl1iIreqH_NnSl3jGs0PTAncDk45DqfW8k8a8kWr51eU3FNjBJmBxVxx4U2eua3A-kZLLe_nocAzwKN_12Uzs778dFee7BW4ihgqhqy_kwFTgzjKEnGEwXQvPkvg=s1200",
+  dubai:"https://lh3.googleusercontent.com/place-photos/AJRVUZNDjNAqZMGlvRug7afNhaKYV9bBAC4wveVYFIPliNh3o67wX2kT5JtTtXORp0fTWFpYil8D_d5hkGDOyV4T9OQlKzl_O6lFluLNx6y8AQPE8ksky1DAskEDqYRGFUHX0jt4tymBZPA20j1y=s1200",
+  phnompenh:"https://lh3.googleusercontent.com/place-photos/AJRVUZOf4zwC8VOOa0OH7Wwsuj4bXBjIn3DXWxx0QpHF1jSHCeWH0lHMlVOt6z2PhHcWmBKChs0WubDKvEKBLMjdPb3mFPh97NMfqFjCObihELqW5VQdO6RycIe1QtgM9VFh8lUeeiCKCFsN9td0FQ=s1200",
+  siemreap:"https://lh3.googleusercontent.com/place-photos/AJRVUZParQKgSILs_Qz1tQgwwq5b0fkgItjf4UoFWYCr50M5-eNBLept9FNoexPIvktU10pO_9JYXskgmULwoaAID6msa1KMz9DeSIr3JiHanQIbwXLsd3M0DjIYcLD3uKOtcNFxPPxo4TxIpCy1-w=s1200",
+  angkorwat:"https://lh3.googleusercontent.com/place-photos/AJRVUZPXqfEqv8IoO58hR8JUDmkMMtsOUDn3mM4-bcAiSCdUzrfRlPCMXJZcnLqp0LCpfLKnSvnFJch4QX3YzujaLhmelEg-7BJeNTBbWPK7tJjR7SrtojWX_ZtFvEEjE0uxUW6rRCunttj3AeaMuQ=s1200",
+  chiphat:"https://lh3.googleusercontent.com/place-photos/AJRVUZOLdndqbNXaspwIRQgiVYYGcj_h1Qpi7U2ma2g4AbSw4BvyxAmbsDhWE_H7bpQ77nu144LOh0C_BBZcnErGZ2FRXjq-I7XI7tjjJlYQSXXOiRPak6X3bDCaZy1e88EsqVptadQ4Otb5PR8zDYw=s1200",
+  hcmc:"https://lh3.googleusercontent.com/place-photos/AJRVUZORlQk1MdkEJAH96sTfx5v4XnPXFs2D9xC--Cxt0IriPJF_qzrSWJiw8SbovdwS6EZU4ljPsrNZr4xAgvCx96ooZAgctMc7f6kKUutfumnIhFvi6ZCV-9MMwdi2CCpp-xTPjh6O4LTqlDRO=s1200",
+};
+
+const MAPS = {
+  gatwick:"https://maps.google.com/?cid=13726001889933259878",
+  dubai:"https://maps.google.com/?cid=16615419498770001641",
+  phnompenh:"https://maps.google.com/?cid=11241282536010491323",
+  siemreap:"https://maps.google.com/?cid=12195935778398125050",
+  angkorwat:"https://maps.google.com/?cid=4515887843808133517",
+  chiphat:"https://maps.google.com/?cid=13307792977288898585",
+  andoungteuk:"https://maps.google.com/?cid=7894567541936003502",
+  bavet:"https://maps.google.com/?cid=13326921918439192340",
+  hcmc:"https://maps.google.com/?cid=17392719987004412203",
+};
+
+const FACTS = {
+  1:`Gatwick is the world's busiest single-runway airport — everything ${NAME_SAFE}'s plane does today happens on one strip of tarmac.`,
+  2:`Cambodia is 6 hours ahead of the UK — when you're having breakfast, ${NAME_SAFE} is finishing ${P.poss} afternoon.`,
+  3:"Phnom Penh sits where three rivers meet, including the Mekong — one of the few rivers on Earth that reverses direction with the seasons.",
+  4:"Angkor Wat is the only building in the world to appear on a national flag — look at Cambodia's flag and you'll see it.",
+  5:"Angkor Wat was built ~900 years ago without cranes or mortar — millions of sandstone blocks floated in on rafts and fitted so tightly no cement was needed.",
+  6:`'FAITH garden' is Better Lives' name for the family vegetable plots ${NAME_SAFE} is helping build today — designed to give a family a steady, self-sufficient food supply all year round.`,
+  7:"Insect-repellent spray made from local plants is a favourite trick in organic farming here — it protects the vegetables without any chemicals a family can't afford to keep buying.",
+  8:"Better Lives partners with the village primary school too — so today might involve teaching or playing games with local kids as much as gardening.",
+  9:"The whole village is officially behind this project — local leaders arranged skilled community members to help, so today is as much a village event as a build day.",
+  10:`Fish amok, Cambodia's national dish, is a coconut fish curry steamed in banana leaves — ${NAME_SAFE} might try it at the night market tonight.`,
+  11:"The Cardamom Mountains sprawl over 4.4 million hectares — the largest rainforest in Southeast Asia. Today's boat ride up the Preak Piphot River often spots monkeys, flying squirrels and all kinds of birds.",
+  12:"At O'Spot waterfall today, you can actually walk behind the water into a hidden bat cave — Chi Phat became Cambodia's first community-run ecotourism project, turning a former poaching village into one protecting its own forest.",
+  13:`The mysterious burial jars and wooden coffins ${NAME_SAFE} passes today are hidden deep in the forest — nobody is certain which people left them there, or exactly how old they are.`,
+  14:`Tonight ${NAME_SAFE} sleeps in a hammock under jungle stars near the O'Malu waterfall — with almost no light pollution out here, the Milky Way is properly visible.`,
+  15:`By tonight ${NAME_SAFE} will have trekked 74km in four days — nearly two marathons through jungle in tropical heat — finishing with a celebratory dinner back in the Chi Phat community that first welcomed ${P.obj}.`,
+  16:"Phnom Penh means 'Penh's Hill' — legend says a widow named Penh found sacred statues in a floating tree and built a temple on the hill.",
+  17:`Crossing at Bavet/Moc Bai, ${NAME_SAFE} goes from the Kingdom of Wonder to Vietnam — where Ben Thanh Market in Ho Chi Minh City has stood since 1914 and you can barter for almost anything.`,
+  18:"The Cu Chi Tunnels today were built by the Viet Cong — over 250km of underground passages used during the Vietnam War. Some sections tourists can crawl through are still the original wartime size.",
+  19:`After ~19,000km of travel, two countries, one jungle and a house built — welcome home, ${NAME_SAFE}! 🎉`,
+};
+
+// rough time-of-day schedules (Cambodia local time, UTC+7) used for the "right now he's probably..." line
+const SCHEDULES = {
+  1:[[0,"getting ready and packing final bits"],[11,"at Gatwick with the team"],[14,"in the air — EK16 to Dubai"]],
+  2:[[0,"transiting through Dubai airport"],[3,"in the air — EK348 to Phnom Penh"],[17,"landed! Meeting the driver, transferring to the hotel"],[20,"settling into the hotel after two days of travel"]],
+  3:[[0,"asleep at the hotel"],[7,"having breakfast at the hotel"],[9,"visiting Tuol Sleng (S21) and the Killing Fields"],[17,"back at the hotel, decompressing after a heavy but important day"],[22,"asleep"]],
+  4:[[0,"asleep"],[7,"having breakfast, then boarding transport to Siem Reap"],[9,"on the road to Siem Reap (~3.5hrs)"],[14,"exploring the Angkor Wat complex"],[18,"evening at the hostel in Siem Reap"],[22,"asleep"]],
+  5:[[0,"asleep"],[5,"possibly up for sunrise at Angkor Wat"],[9,"travelling to Peaksneng"],[14,"meeting Rey from Better Lives, project briefing and buying supplies"],[19,"first evening in the village"],[22,"asleep"]],
+  6:[[0,"asleep"],[7,"breakfast, then heading to the project site"],[8,"morning session — garden building with the family and Better Lives team"],[12,"midday break — too hot to work, resting until 2pm"],[14,"afternoon session continues"],[17,"finished for the day — free time or a village cultural activity"],[21,"asleep"]],
+  10:[[0,"asleep"],[7,"saying goodbye to hosts"],[9,"on the ~6hr journey back to Phnom Penh"],[16,"arrived, maybe visiting the Royal Palace"],[19,"at the night markets — Khmer noodles or amok"],[22,"asleep"]],
+  11:[[0,"asleep"],[8,"collected from the hostel, 3-4hr drive to Andoung Tuek"],[12,"boarding the boat up the Preak Piphot River"],[15,"arriving at Chi Phat, meeting the trek guides"],[18,"short evening hike to Chhay Chrey Rapids"],[20,"dinner and trek briefing"],[21,"asleep"]],
+  12:[[0,"asleep"],[6,"breakfast, meeting the trek guides"],[8,"trekking — 21km along old logging trails today"],[11,"at O'Spot waterfall — walking behind it to the bat cave"],[13,"lunch at Tuk Vet waterfall"],[15,"afternoon trekking"],[17,"arriving at O'Ampov campsite"],[20,"asleep — early nights on trek"]],
+  15:[[0,"asleep"],[6,"final trek day begins — 14km"],[9,"hiking to Chhay Khpos waterfall"],[12,"lunch break at the waterfall"],[14,"final stretch back to Chi Phat"],[18,"celebratory community dinner!"],[21,"asleep"]],
+  16:[[0,"asleep"],[5,"possibly up for the sunrise hike"],[9,"transfer back to Phnom Penh (~5.5hrs)"],[15,"free afternoon — sightseeing or shopping"],[20,"last night in Cambodia"],[22,"asleep"]],
+  17:[[0,"asleep"],[7,"breakfast, then bus toward the border"],[11,"crossing at Bavet/Moc Bai into Vietnam"],[14,"on the road to Ho Chi Minh City"],[17,"exploring the markets"],[19,"final celebratory team meal!"],[23,"asleep"]],
+  18:[[0,"asleep"],[7,"sourcing breakfast before the early collection"],[9,"on the way to the Cu Chi Tunnels (2hrs from the city)"],[11,"exploring the Cu Chi Tunnels"],[13,"lunch at the tunnel entrance restaurant"],[15,"back in the city, visiting the War Remnants Museum"],[18,"returning to the hotel to collect luggage"],[20,"Footprint transfers the team to Tan Son Nhat airport"],[23,"boarding EK393 — heading home!"]],
+  19:[[0,"in the air to Dubai"],[8,"transiting Dubai, boarding EK15"],[11,"in the air — final leg to Gatwick"],[18,"HOME! 🎉"]],
+};
+// days 7-9 share day 6's village rhythm; days 13-14 share day 12's trek rhythm
+SCHEDULES[7]=SCHEDULES[6]; SCHEDULES[8]=SCHEDULES[6]; SCHEDULES[9]=SCHEDULES[6];
+SCHEDULES[13]=SCHEDULES[12]; SCHEDULES[14]=SCHEDULES[12];
+
+// trekking km per trip day (from the itinerary: 21, 21, 18, then 14 on the final day)
+const TREK_KM = { 12:21, 13:21, 14:18, 15:14 };
+const TREK_TOTAL = 74;
+
+// the moments True Adventure / school are most likely to send an update
+const KEY_DATES = [
+  { d:"2026-07-18", label:"Safe arrival in Phnom Penh", when:"Sat 18 Jul, ~10:35 UK time" },
+  { d:"2026-07-27", label:"Team heads into the jungle (least contactable)", when:"Mon 27 Jul" },
+  { d:"2026-07-31", label:"Team exits the jungle at Chi Phat", when:"Fri 31 Jul" },
+  { d:"2026-08-03", label:"Departure from Ho Chi Minh City", when:"Mon 3 Aug, ~17:50 UK time" },
+  { d:"2026-08-04", label:"Landing at Gatwick — pickup!", when:"Tue 4 Aug, 12:35" },
+];
+
+const DAYS = [
+  {n:1,date:"2026-07-17",loc:"London → in flight",phase:"travel",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
+   summary:"Depart London Gatwick North Terminal 14:30 on EK16, overnight flight toward Dubai."},
+  {n:2,date:"2026-07-18",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
+   summary:"Arrive Dubai 00:40, depart EK348, land Phnom Penh (Techo Intl) 16:35. Collected by driver and transferred to hotel."},
+  {n:3,date:"2026-07-19",loc:"Phnom Penh",phase:"culture",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
+   summary:"Acclimatising day: the Tuol Sleng Genocide Museum (S21) and the Killing Fields of Choeung Ek."},
+  {n:4,date:"2026-07-20",loc:"Phnom Penh → Siem Reap",phase:"culture",photo:"siemreap",map:"siemreap",lat:13.3632533,lng:103.856403,
+   summary:"Travel to Siem Reap. Afternoon exploring Angkor Wat — the largest religious monument in the world, covering 400 acres."},
+  {n:5,date:"2026-07-21",loc:"Siem Reap → Peaksneng",phase:"culture",photo:"angkorwat",map:"angkorwat",lat:13.4124693,lng:103.8669857,
+   summary:"Sunrise at Angkor Wat, then ~3.5hrs to Peaksneng. Meets Reynaldo Diez from Better Lives for the project briefing and to shop for supplies."},
+  {n:6,date:"2026-07-22",loc:"Peaksneng",phase:"project",photo:null,map:null,lat:13.55,lng:104.15,
+   summary:"Project begins: working with a local family to build their organic 'FAITH' vegetable garden — fencing and planting, alongside the Peaksneng Thormacheat Shop community."},
+  {n:7,date:"2026-07-23",loc:"Peaksneng",phase:"project",photo:null,map:null,lat:13.55,lng:104.15,
+   summary:"Garden work continues: making compost and natural insect-repellent sprays for the vegetable garden, 4-6hrs with a break from the midday heat (12:00-14:00)."},
+  {n:8,date:"2026-07-24",loc:"Peaksneng",phase:"project",photo:null,map:null,lat:13.55,lng:104.15,
+   summary:"More garden building, and likely teaching a lesson or playing games with the children at the local primary school."},
+  {n:9,date:"2026-07-25",loc:"Peaksneng",phase:"project",photo:null,map:null,lat:13.55,lng:104.15,
+   summary:"Final project day — finishing the family's garden. Evenings might include a cooking lesson, local circus, or traditional music with the village."},
+  {n:10,date:"2026-07-26",loc:"Peaksneng → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
+   summary:"Say goodbye to hosts, ~6hr journey back to Phnom Penh. Evening at the night markets."},
+  {n:11,date:"2026-07-27",loc:"Phnom Penh → Chi Phat",phase:"travel",photo:"chiphat",map:"chiphat",lat:11.3286123,lng:103.5240783,
+   summary:"08:00 collection, 3-4hr drive to Andoung Tuek, then a 2hr boat ride up the Preak Piphot River to Chi Phat — spotting monkeys, flying squirrels and birds along the way. In the evening, a short 2km hike to Chhay Chrey Rapids with a local guide."},
+  {n:12,date:"2026-07-28",loc:"Chi Phat → O'Ampov",phase:"trek",photo:"chiphat",map:"chiphat",lat:11.28,lng:103.42,
+   summary:"Trek 21km (7-8hrs) along old logging trails with wide Cardamom views. Explores the 'hidden' O'Spot waterfall — walking behind it to a bat cave — with lunch at Tuk Vet waterfall, before camping at O'Ampov."},
+  {n:13,date:"2026-07-29",loc:"O'Ampov → O'Peam Krovanh",phase:"trek",photo:null,map:null,lat:11.24,lng:103.38,
+   summary:"Trek 21km (7-8hrs) to a mystical site of ancient burial jars and wooden coffins hidden in the forest, lunch by the O'Peam Pika River, then the final 7km to camp at O'Peam Krovanh."},
+  {n:14,date:"2026-07-30",loc:"O'Peam Krovanh → O'Malu",phase:"trek",photo:null,map:null,lat:11.2,lng:103.34,
+   summary:"Trek 18km (6-7hrs) through dense Cardamom foothills, with stops at the O'Kroch ('Wild Orange') and O'Da ('Flat Stone') rivers. Camp at O'Malu, relaxing by the waterfall before dinner."},
+  {n:15,date:"2026-07-31",loc:"O'Malu → Chi Phat",phase:"trek",photo:"chiphat",map:"chiphat",lat:11.3286123,lng:103.5240783,
+   summary:"Final trek day, 14km (4-5hrs): a hike to Chhay Khpos waterfall for lunch, then looping back to Chi Phat village for a celebratory community dinner."},
+  {n:16,date:"2026-08-01",loc:"Chi Phat → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
+   summary:"Sunrise hike, then transfer (~5.5hrs) back to Phnom Penh. Free afternoon for sightseeing or shopping."},
+  {n:17,date:"2026-08-02",loc:"Phnom Penh → Ho Chi Minh City",phase:"border",photo:"hcmc",map:"hcmc",lat:10.8230989,lng:106.6296638,
+   summary:"Asia Adventures buses the team to the Bavet/Moc Bai border, where the Vietnam agent (Footprint) takes over for the drive into Ho Chi Minh City. Wander the alleyways to Ben Thanh Market, organise a final celebratory meal, or explore the city."},
+  {n:18,date:"2026-08-03",loc:"Ho Chi Minh City → in transit",phase:"travel",photo:"hcmc",map:"hcmc",lat:10.8230989,lng:106.6296638,
+   summary:"Collected at 8:30am for the pre-paid 2hr trip to the Cu Chi Tunnels — lunch at the tunnel entrance, then back to the city to visit the War Remnants Museum. Footprint then transfers the team to the airport. Depart Tan Son Nhat on EK393 at 23:50."},
+  {n:19,date:"2026-08-04",loc:"Dubai → home",phase:"home",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
+   summary:"Arrive Dubai 04:00, depart EK15 08:00, land London Gatwick 12:35. Welcome home!"},
+];
+
+/* ---------------- Date logic ---------------- */
+function dayIndexForToday(){
+  const today = new Date();
+  const start = new Date(TRIP_START+"T00:00:00");
+  const end = new Date(TRIP_END+"T23:59:59");
+  if (today < start) return -1;
+  if (today > end) return 20;
+  return Math.floor((today-start)/86400000)+1;
+}
+const currentDayNum = dayIndexForToday();
+const status = currentDayNum<1 ? "before" : currentDayNum>19 ? "after" : "during";
+const currentDay = DAYS.find(d=>d.n===currentDayNum);
+
+/* ---------------- Hero ---------------- */
+document.getElementById("progressLabel").textContent =
+  status==="before" ? "Trip hasn't started yet" :
+  status==="during" ? `Day ${currentDayNum} of 19` :
+  "Trip complete — welcome home!";
+document.getElementById("progressFill").style.width =
+  Math.min(100,Math.max(0,(Math.min(Math.max(currentDayNum,0),19)/19)*100))+"%";
+
+/* Countdown boxes */
+(function(){
+  const now = new Date();
+  const start = new Date(TRIP_START+"T14:30:00+01:00"); // EK16 departure
+  const home = new Date(TRIP_END+"T12:35:00+01:00");    // EK15 arrival
+  function timeTo(d){
+    const ms = Math.max(0, d-now);
+    const totalHours = ms/3600000;
+    const days = Math.floor(totalHours/24);
+    const hours = Math.floor(totalHours%24);
+    return { days, hours, label: days>0 ? `${days}d ${hours}h` : `${hours}h` };
+  }
+  const el = document.getElementById("countdownRow");
+  if (status==="before"){
+    const t = timeTo(start);
+    el.innerHTML = `
+      <div class="countdown-box"><div class="countdown-num">${t.label}</div><div class="countdown-lbl">until departure</div></div>
+      <div class="countdown-box"><div class="countdown-num">19</div><div class="countdown-lbl">days of adventure</div></div>`;
+  } else if (status==="during"){
+    const t = timeTo(home);
+    el.innerHTML = `
+      <div class="countdown-box"><div class="countdown-num">${currentDayNum}</div><div class="countdown-lbl">day of the trip</div></div>
+      <div class="countdown-box"><div class="countdown-num">${t.label}</div><div class="countdown-lbl">until he's home 🏡</div></div>`;
+  } else {
+    el.innerHTML = `<div class="countdown-box"><div class="countdown-num">🎉</div><div class="countdown-lbl">He's home!</div></div>`;
+  }
+})();
+
+/* Live "over there right now" — local time + weather (Open-Meteo, free, no key) */
+(function(){
+  const el = document.getElementById("thereNow");
+  if (status==="after"){ el.style.display="none"; return; }
+  // Vietnam on days 17-19, otherwise Cambodia. Both are UTC+7 (Asia/Phnom_Penh / Asia/Ho_Chi_Minh)
+  const inVietnam = status==="during" && currentDayNum>=17;
+  const placeName = status==="before" ? "Phnom Penh" : inVietnam ? "Ho Chi Minh City" : (currentDay ? currentDay.loc.split('→').pop().trim() : "Phnom Penh");
+  const lat = currentDay ? currentDay.lat : 11.556, lng = currentDay ? currentDay.lng : 104.928;
+  const isUKleg = currentDay && (currentDay.n===1 || currentDay.n===19);
+
+  function renderTime(){
+    const t = new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", minute:"2-digit" }).format(new Date());
+    const h = parseInt(new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", hour12:false }).format(new Date()));
+    const vibe = h<6 ? `${P.will} be fast asleep 😴` : h<9 ? "early morning there — villages wake early" : h<12 ? "mid-morning there" : h<17 ? "afternoon there" : h<21 ? "evening there" : "late evening — probably winding down";
+    return { t, vibe };
+  }
+  function draw(weatherStr){
+    const {t,vibe} = renderTime();
+    el.innerHTML = `<div class="tn-head">Over there right now</div>
+      🕐 <b>${t}</b> in ${placeName} — ${vibe}${weatherStr ? `<br>${weatherStr}` : ""}`;
+  }
+  draw("");
+  setInterval(()=>{ // keep clock live without refetching weather
+    const cur = el.innerHTML;
+    const wPart = cur.includes("<br>") ? cur.substring(cur.indexOf("<br>")+4) : "";
+    draw(wPart);
+  }, 30000);
+
+  if (!isUKleg){
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FBangkok`)
+      .then(r=>r.json())
+      .then(d=>{
+        if (!d.current) return;
+        const codes = {0:"clear ☀️",1:"mostly clear 🌤",2:"partly cloudy ⛅",3:"overcast ☁️",45:"foggy 🌫",51:"drizzle 🌦",61:"light rain 🌧",63:"rain 🌧",65:"heavy rain ⛈",80:"showers 🌦",81:"showers 🌧",82:"heavy showers ⛈",95:"thunderstorm ⛈"};
+        const desc = codes[d.current.weather_code] || "—";
+        const humidity = d.current.relative_humidity_2m != null ? ` · 💧 ${Math.round(d.current.relative_humidity_2m)}% humidity` : "";
+        draw(`🌡 <b>${Math.round(d.current.temperature_2m)}°C</b> and ${desc}${humidity} (July is monsoon season — warm, humid air is normal)`);
+      })
+      .catch(()=>{}); // weather is a bonus; fail silently
+  }
+})();
+
+/* Key dates strip - the moments the school/True Adventure are most likely to be in touch */
+(function(){
+  const el = document.getElementById("keyDates");
+  const today = new Date().toISOString().slice(0,10);
+  el.innerHTML = `<div class="tn-head" style="font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#C9A66B;">Key moments to expect news</div>` +
+    KEY_DATES.map(k=>`<div class="key-date ${today>k.d?'done':''}"><span class="kd-when">${k.when}</span><span>${k.label}</span></div>`).join('');
+})();
+
+function rightNowLine(dayNum){
+  const sched = SCHEDULES[dayNum];
+  if (!sched) return "";
+  const h = parseInt(new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", hour12:false }).format(new Date()));
+  let activity = sched[0][1];
+  for (const [start, act] of sched){ if (h>=start) activity = act; }
+  return `<div class="right-now">🧭 <b>Right now ${P.be} probably:</b> ${activity}</div>`;
+}
+
+if (currentDay && status==="during"){
+  const p = PHASES[currentDay.phase];
+  document.getElementById("currentCard").innerHTML = `
+    <div class="current-card">
+      ${currentDay.photo ? `<img src="${PHOTOS[currentDay.photo]}" alt="${currentDay.loc}">` : ""}
+      <div class="inner">
+        <span class="phase-pill" style="background:${p.color}">${p.icon} ${p.label}</span>
+        <h2 class="current-loc">${currentDay.loc}</h2>
+        ${rightNowLine(currentDay.n)}
+        <p style="font-size:17px;line-height:1.5;margin:0;color:#3A3F3B">${currentDay.summary}</p>
+        <div class="fun-fact"><b>Today's fact:</b> ${FACTS[currentDay.n]||""}</div>
+        <a class="wa-link" style="display:inline-block;margin:8px 0 0;" href="https://wa.me/?text=${encodeURIComponent(`📍 Day ${currentDay.n}: ${currentDay.loc}\n${currentDay.summary}`)}" target="_blank" rel="noreferrer">Share on WhatsApp ↗</a>
+      </div>
+    </div>`;
+}
+
+/* Trek progress - only meaningful from the first trek day onward */
+(function(){
+  const el = document.getElementById("trekProgress");
+  const firstTrekDay = 12, lastTrekDay = 15;
+  if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
+    el.innerHTML = `
+      <div class="trek-progress">
+        <h4>🥾 The Cardamom Trek</h4>
+        <p class="trek-sub">28–31 Jul · 74km over four days through jungle — nearly two marathons. Progress will appear here once he starts.</p>
+        <div class="trek-track"><div class="trek-fill" style="width:0%"></div></div>
+        <div class="trek-stats"><span>0 km</span><span>74 km</span></div>
+        <p class="trek-note">Guides from the Chi Phat community lead throughout, with an Asia Adventures staff member accompanying the team the whole way. If weather or fitness needs change the route, the school and True Adventure's Operations Room are informed directly — the plan here may not always match in real time.</p>
+      </div>`;
+    return;
+  }
+  // km completed = sum of full trek days finished + assume today's distance completes by evening (18:00 local)
+  let km = 0;
+  const hLocal = parseInt(new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", hour12:false }).format(new Date()));
+  for (let d=firstTrekDay; d<=lastTrekDay; d++){
+    if (status==="after" || currentDayNum>d) km += TREK_KM[d];
+    else if (currentDayNum===d){
+      // rough intra-day estimate: trekking ~08:00-17:00
+      const frac = Math.min(1, Math.max(0, (hLocal-8)/9));
+      km += Math.round(TREK_KM[d]*frac);
+    }
+  }
+  km = Math.min(km, TREK_TOTAL);
+  const pct = Math.round((km/TREK_TOTAL)*100);
+  const doneMsg = km>=TREK_TOTAL ? `Trek complete — ${P.subj} did it! 🎉` : `Estimated from the itinerary — ${P.be} earning every step.`;
+  el.innerHTML = `
+    <div class="trek-progress">
+      <h4>🥾 The Cardamom Trek</h4>
+      <p class="trek-sub">${doneMsg}</p>
+      <div class="trek-track">
+        <div class="trek-fill" style="width:${pct}%"></div>
+        <div class="trek-boots" style="left:${Math.max(3,Math.min(97,pct))}%">🥾</div>
+      </div>
+      <div class="trek-stats"><span>${km} km trekked</span><span>${TREK_TOTAL} km total</span></div>
+      <p class="trek-note">Guides from Chi Phat lead throughout, with an Asia Adventures staff member accompanying the whole route — if the plan changes on the ground, True Adventure's Operations Room is informed directly.</p>
+    </div>`;
+})();
+
+/* ---------------- Map ---------------- */
+// Some viewers (and iOS webviews) treat hash-only links — like Leaflet's popup ✕ button (#close)
+// — as real navigation and show an "Open Link" prompt. Neutralise all in-page hash links.
+document.addEventListener('click', (e)=>{
+  const a = e.target.closest('a');
+  if (a && (a.getAttribute('href')||'').startsWith('#')) e.preventDefault();
+}, true);
+
+const map = L.map('map', { scrollWheelZoom:false, closePopupOnClick:true });
+// Leaflet's popup ✕ is an <a href="#..."> which some viewers intercept with an "Open Link"
+// prompt — disable it globally; tapping anywhere on the map closes popups instead.
+L.Popup.mergeOptions({ closeButton:false });
+// Leaflet's zoom +/- controls are also anchors — strip their hrefs so no viewer treats them as links
+map.whenReady(()=>{ document.querySelectorAll('.leaflet-control-zoom a').forEach(a=>a.removeAttribute('href')); });
+
+const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution:'&copy; <a href="https://www.esri.com">Esri</a> &copy; OpenStreetMap contributors', maxZoom:18
+}).addTo(map);
+
+const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution:'&copy; <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics', maxZoom:18
+});
+
+// Map / Satellite toggle, styled to match the rest of the app (not a Leaflet anchor control,
+// so it can't be caught by viewers that intercept in-page hash links)
+const mapTypeControl = L.control({ position:'topright' });
+mapTypeControl.onAdd = function(){
+  const div = L.DomUtil.create('div');
+  L.DomEvent.disableClickPropagation(div);
+  div.style.cssText = 'display:flex;background:#fff;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);overflow:hidden;font-family:Inter,sans-serif;font-size:13px;font-weight:600;';
+  div.innerHTML = `
+    <button type="button" id="mapTypeStreet" style="border:none;background:#1B4332;color:#F6F1E7;padding:8px 14px;cursor:pointer;">Map</button>
+    <button type="button" id="mapTypeSat" style="border:none;background:#fff;color:#3A3F3B;padding:8px 14px;cursor:pointer;">Satellite</button>`;
+  return div;
+};
+mapTypeControl.addTo(map);
+map.whenReady(()=>{
+  const streetBtn = document.getElementById('mapTypeStreet');
+  const satBtn = document.getElementById('mapTypeSat');
+  function setActive(which){
+    const onStyle = 'border:none;background:#1B4332;color:#F6F1E7;padding:8px 14px;cursor:pointer;';
+    const offStyle = 'border:none;background:#fff;color:#3A3F3B;padding:8px 14px;cursor:pointer;';
+    streetBtn.style.cssText = which==='street' ? onStyle : offStyle;
+    satBtn.style.cssText = which==='sat' ? onStyle : offStyle;
+    streetBtn.setAttribute('aria-pressed', which==='street');
+    satBtn.setAttribute('aria-pressed', which==='sat');
+  }
+  streetBtn.addEventListener('click', ()=>{ map.removeLayer(satelliteLayer); map.addLayer(streetLayer); setActive('street'); });
+  satBtn.addEventListener('click', ()=>{ map.removeLayer(streetLayer); map.addLayer(satelliteLayer); setActive('sat'); });
+  setActive('street');
+});
+
+const MAP_DAYS = DAYS.filter(d => d.n!==1 && d.n!==19); // exclude flight-only transit days
+const latlngs = MAP_DAYS.map(d=>[d.lat,d.lng]);
+
+// one stop per unique location (collapse consecutive same-location days), in travel order
+const stops = [];
+MAP_DAYS.forEach(d=>{
+  const last = stops[stops.length-1];
+  if (last && last.lat===d.lat && last.lng===d.lng){ last.days.push(d); }
+  else stops.push({ lat:d.lat, lng:d.lng, days:[d] });
+});
+
+// when a location is revisited later (e.g. Phnom Penh, Chi Phat), the repeat stop sits on the exact
+// same point as the first visit and would otherwise be drawn on top of it, hiding the earlier number.
+// Keep the first visit at its true spot; nudge later revisits outward in a small spiral, with a thin
+// connector line back to the true location, so every numbered stop stays visible.
+const seenCoords = {};
+stops.forEach(s=>{
+  const key = s.lat.toFixed(4)+','+s.lng.toFixed(4);
+  const occ = seenCoords[key] || 0;
+  seenCoords[key] = occ+1;
+  s.dispLat = s.lat; s.dispLng = s.lng; s.isRevisit = occ>0;
+  if (occ>0){
+    const angle = (occ*137.5)*Math.PI/180;
+    const radius = 0.09*occ;
+    s.dispLat = s.lat + radius*Math.cos(angle);
+    s.dispLng = s.lng + radius*Math.sin(angle)/Math.cos(s.lat*Math.PI/180);
+  }
+});
+
+// one layer group per trip phase, so each stage of the trip can be shown/hidden independently
+const phaseLayers = {};
+Object.keys(PHASES).forEach(k=>{ phaseLayers[k] = L.layerGroup().addTo(map); });
+
+// one coloured polyline segment per leg, coloured by the phase of the day it leads into,
+// so the route itself reads as a coloured timeline, oldest to newest
+for (let i=0; i<latlngs.length-1; i++){
+  const legPhaseKey = MAP_DAYS[i+1].phase;
+  L.polyline([latlngs[i], latlngs[i+1]], { color: PHASES[legPhaseKey].color, weight:4, opacity:.75 }).addTo(phaseLayers[legPhaseKey]);
+}
+
+// numbered stop markers - the number is the order of travel (1 = first, N = last)
+stops.forEach((s,idx)=>{
+  const first = s.days[0];
+  const p = PHASES[first.phase];
+  const isCurrentStop = status==="during" && s.days.some(d=>d.n===currentDayNum);
+  const dayLabel = s.days.length>1 ? `Days ${s.days[0].n}–${s.days[s.days.length-1].n}` : `Day ${first.n}`;
+  const size = isCurrentStop ? 30 : 24;
+  if (s.isRevisit){
+    L.polyline([[s.lat,s.lng],[s.dispLat,s.dispLng]], { color:'#6B6455', weight:1.5, dashArray:'3 5' }).addTo(phaseLayers[first.phase]);
+  }
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${p.color};color:#fff;border:2.5px solid ${isCurrentStop?'#C9A66B':'#fff'};
+      display:flex;align-items:center;justify-content:center;
+      font-family:'JetBrains Mono',monospace;font-weight:600;font-size:${isCurrentStop?13:11}px;
+      box-shadow:0 2px 6px rgba(0,0,0,.35);
+      ${isCurrentStop?'animation:pulse 1.8s ease-in-out infinite;':''}
+    ">${idx+1}</div>`,
+    iconSize:[size,size], iconAnchor:[size/2,size/2]
+  });
+  const marker = L.marker([s.dispLat,s.dispLng], { icon, zIndexOffset: isCurrentStop?1000:0 }).addTo(phaseLayers[first.phase]);
+  marker.bindPopup(`<b>Stop ${idx+1} · ${first.loc.split('→').pop().trim()}</b><br>${dayLabel}${s.isRevisit?' <i>(return visit)</i>':''}<br>${first.summary}`);
+});
+
+const routeBounds = L.polyline(latlngs).getBounds().pad(0.15);
+map.fitBounds(routeBounds);
+
+// filter chips + legend, rendered BELOW the map (not floating on top of it) so the map stays fully visible on small screens
+const usedPhases = [...new Set(MAP_DAYS.map(d=>d.phase))];
+const controlsEl = document.getElementById("mapControls");
+controlsEl.innerHTML = `
+  <p class="hint">Numbers = travel order. Tap a stage to show/hide it on the map.</p>
+  <div class="chip-row">
+    ${usedPhases.map(k=>`
+      <label class="chip" data-phase="${k}">
+        <input type="checkbox" checked data-phase="${k}">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PHASES[k].color};"></span>
+        ${PHASES[k].icon} ${PHASES[k].label}
+      </label>`).join('')}
+  </div>`;
+controlsEl.querySelectorAll('input[data-phase]').forEach(cb=>{
+  cb.addEventListener('change', ()=>{
+    const layer = phaseLayers[cb.dataset.phase];
+    if (cb.checked) map.addLayer(layer); else map.removeLayer(layer);
+    cb.closest('.chip').classList.toggle('off', !cb.checked);
+  });
+});
+
+/* ---------------- Timeline ---------------- */
+const timelineEl = document.getElementById("timeline");
+DAYS.forEach(d=>{
+  const p = PHASES[d.phase];
+  const isPast = currentDayNum>d.n && status!=="before";
+  const isToday = d.n===currentDayNum && status==="during";
+  const row = document.createElement("div");
+  row.className = "day-row";
+  const dateLabel = new Date(d.date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+  row.innerHTML = `
+    <div class="dot ${isToday?'today':isPast?'past':''}">${d.n}</div>
+    <div class="day-card ${isToday?'today':''}">
+      <div class="day-head">
+        <span class="day-date">${dateLabel}</span>
+        <span class="phase-tag" style="color:${p.text||p.color}">${p.icon} ${p.label}</span>
+      </div>
+      <div class="day-loc">${d.loc}</div>
+      <div class="day-body">
+        ${d.photo?`<img class="day-photo" src="${PHOTOS[d.photo]}" alt="${d.loc}">`:""}
+        <p class="day-summary">${d.summary}</p>
+        ${FACTS[d.n]?`<div class="fun-fact" style="margin:0 0 8px;"><b>Fun fact:</b> ${FACTS[d.n]}</div>`:""}
+        ${d.map?`<a class="map-link" href="${MAPS[d.map]}" target="_blank" rel="noreferrer">View on Google Maps ↗</a>`:""}
+        <a class="wa-link" href="https://wa.me/?text=${encodeURIComponent(`📍 Day ${d.n} (${dateLabel}): ${d.loc}\n${d.summary}`)}" target="_blank" rel="noreferrer">Share on WhatsApp ↗</a>
+      </div>
+    </div>`;
+  const card = row.querySelector(".day-card");
+  const body = row.querySelector(".day-body");
+  card.setAttribute("tabindex","0");
+  card.setAttribute("role","button");
+  card.setAttribute("aria-expanded", isToday ? "true" : "false");
+  card.setAttribute("aria-label", `Day ${d.n}, ${dateLabel}: ${d.loc}. ${p.label}. Tap to expand details.`);
+  const toggle = ()=>{
+    body.classList.toggle("open");
+    card.setAttribute("aria-expanded", body.classList.contains("open") ? "true" : "false");
+  };
+  card.addEventListener("click", toggle);
+  card.addEventListener("keydown", (e)=>{ if (e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+  if (isToday) body.classList.add("open");
+  timelineEl.appendChild(row);
+});
+
+/* ---------------- Family notes (localStorage) ---------------- */
+const PROMPTS = [
+  `What happened today that ${NAME_SAFE} would find funny?`,
+  `What did you have for dinner that ${P.wouldC} be jealous of (or relieved to miss)?`,
+  `What's one thing you saw today that made you think of ${P.obj}?`,
+  "What's the family news headline of the day?",
+  `What do you think ${NAME_SAFE} is doing right now?`,
+  `What's the first thing you want to do together when ${P.be} back?`,
+  "Rate today out of 10 — and why?",
+  `What would ${NAME_SAFE} say if ${P.subj} could see the weather here vs there?`,
+  "What's everyone else's update of the day?",
+  "What did the garden/pond wildlife get up to today?",
+  `One word to describe how much you miss ${P.obj} (be creative)`,
+  `What question are you saving up to ask ${P.obj} when ${P.be} home?`,
+];
+(function(){
+  // rotate by day of year so everyone sees the same prompt on the same day
+  const doy = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  const prompt = PROMPTS[doy % PROMPTS.length];
+  const chip = document.getElementById("promptChip");
+  chip.innerHTML = `<span class="prompt-chip">💭 Today's prompt: ${prompt}</span>`;
+  chip.querySelector(".prompt-chip").addEventListener("click", ()=>{
+    const input = document.getElementById("noteInput");
+    input.value = prompt + "\n";
+    input.focus();
+  });
+})();
+
+const NOTES_KEY = "marcus-family-notes";
+function loadNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY)||"[]"); }catch(e){ return []; } }
+function renderNotes(){
+  const notes = loadNotes();
+  const el = document.getElementById("notesList");
+  if (notes.length===0){ el.innerHTML = `<p class="notes-hint">No messages yet — add the first one above.</p>`; return; }
+  el.innerHTML = notes.map(n=>`
+    <div class="note-item">
+      <div>${n.text.replace(/</g,'&lt;')}</div>
+      <div class="note-date">${new Date(n.date).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
+    </div>`).join("");
+}
+document.getElementById("saveNote").addEventListener("click", ()=>{
+  const input = document.getElementById("noteInput");
+  const text = input.value.trim();
+  if (!text) return;
+  const notes = loadNotes();
+  notes.unshift({ text, date: new Date().toISOString() });
+  localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+  input.value = "";
+  renderNotes();
+});
+renderNotes();
+
+/* Export & print the message log as a keepsake */
+document.getElementById("exportNotes").addEventListener("click", ()=>{
+  const notes = loadNotes();
+  if (notes.length===0){ alert("No messages yet to export."); return; }
+  const lines = notes.slice().reverse().map(n=>
+    `${new Date(n.date).toLocaleString("en-GB",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}\n${n.text}\n`
+  );
+  const blob = new Blob(
+    [`Messages for ${NAME} — George Abbot True Adventure 2026\n${"=".repeat(50)}\n\n${lines.join("\n")}`],
+    { type:"text/plain" }
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "marcus-trip-messages.txt";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+document.getElementById("printNotes").addEventListener("click", ()=> window.print());
+
+/* ---------------- Info cards: emergency contacts + photo album (editable, saved locally) ---------------- */
+(function(){
+  const el = document.getElementById("infoCards");
+
+  const PORTAL_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49121/message-board";
+  const TRACKER_PAGE_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49569/tracker";
+
+  const FLIGHTS = [
+    { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
+    { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:null,                          arr:"2026-07-18T16:35:00+07:00" },
+    { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
+    { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
+  ];
+  function flightStatus(f, prevArr){
+    const now = new Date();
+    const arr = new Date(f.arr);
+    const dep = f.dep ? new Date(f.dep) : (prevArr || null);
+    if (now >= arr) return { label:"Landed ✅", cls:"done" };
+    if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
+    if (!f.dep && prevArr && now >= prevArr) return { label:"In transit ✈️", cls:"live" };
+    return { label:"Scheduled", cls:"" };
+  }
+  function flightsHTML(){
+    let prevArr = null;
+    const rows = FLIGHTS.map(f=>{
+      const st = flightStatus(f, prevArr);
+      prevArr = new Date(f.arr);
+      const depStr = f.dep ? new Date(f.dep).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+      const arrStr = new Date(f.arr).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+      return `<div class="flight-row ${st.cls}">
+        <div class="flight-main">
+          <b>${f.no}</b> ${f.from} → ${f.to}
+          <a href="https://www.flightradar24.com/data/flights/${f.no.toLowerCase()}" target="_blank" rel="noreferrer" class="wa-link" style="margin-left:8px;font-size:12.5px;">Track live ↗</a>
+        </div>
+        <div class="flight-times">Dep ${depStr} &middot; Arr ${arrStr}</div>
+        <div class="flight-status">${st.label}</div>
+      </div>`;
+    }).join("");
+    return `<div class="info-card">
+      <h4>✈️ Flights</h4>
+      <p class="placeholder" style="margin-bottom:10px;">Status here is estimated from the published schedule, not live data. Tap "Track live" on any flight for the real position via Flightradar24 — most useful once it's actually in the air.</p>
+      ${rows}
+    </div>`;
+  }
+
+  function beforeYouGoHTML(){
+    if (status !== "before") return ""; // only relevant pre-departure
+    return `<div class="info-card">
+      <h4>✅ Before you go</h4>
+      <ul style="margin:0 0 4px;padding-left:20px;font-size:15px;line-height:1.7;color:#3A3F3B;">
+        <li><b>Cambodia E-arrival QR code</b> — can be done from 12 Jul. Bring 2 photocopies to kit check.</li>
+        <li><b>Kit check</b> — Thu 16 Jul, 12:30&ndash;3:00pm, 6th Form Common Room. All kit checked by trek leaders.</li>
+        <li><b>3 passport photos</b> — one handed in at kit check, two kept by ${NAME_SAFE} in a (ideally waterproof) document wallet with passport, visa &amp; QR code.</li>
+        <li><b>Coach to airport</b> — on site outside Raynham Hall by 10:00am Fri 17 Jul. Coach leaves 10:30am sharp.</li>
+        <li><b>No phones</b> — a digital camera and watch instead. Updates come via the school's Instagram (see below).</li>
+      </ul>
+      <p class="placeholder" style="margin-top:8px;">${NAME_SAFE} carries one item of group kit too, so pack with a bit of spare room.</p>
+    </div>`;
+  }
+
+  function trackerHTML(editing){
+    const saved = localStorage.getItem("live-tracker-url") || "";
+    if (editing){
+      return `<div class="info-card">
+        <h4>🛰 True Adventure Portal</h4>
+        <p class="placeholder" style="margin-bottom:10px;">Only fill this in if the portal's own tracker link still isn't showing anything once activated — otherwise just use the "Open Expedition Tracker" button.</p>
+        <input type="url" id="trackerInput" aria-label="Alternative live tracker link" placeholder="Paste an alternative tracker URL here" value="${saved.replace(/"/g,'&quot;')}">
+        <button type="button" class="card-btn" id="saveTracker">Save</button>
+        <button type="button" class="ghost-btn" id="cancelTracker" style="margin-left:8px;">Cancel</button>
+      </div>`;
+    }
+    return `<div class="info-card">
+      <h4>🛰 True Adventure Portal</h4>
+      <p class="placeholder" style="margin-bottom:10px;">Official updates, itinerary and documents all live here — log in with your own saved password (Safari will offer to fill it in).</p>
+      <a class="card-btn link" href="${TRACKER_PAGE_URL}" target="_blank" rel="noreferrer">🛰 Open Expedition Tracker ↗</a>
+      <a class="card-btn link" style="margin-left:8px;background:#3F7248;" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Open Message Board ↗</a>
+      <p class="placeholder" style="margin:12px 0 8px;">True Adventure confirmed: you'll be added to the tracker on the day ${NAME_SAFE} travels, but it won't show anything until the team activates it in-country — this can take a few hours after landing, so don't worry if it's blank at first.</p>
+      ${saved
+        ? `<a class="card-btn link" style="background:#8A6D3B;" href="${saved}" target="_blank" rel="noreferrer">View alternative tracker link ↗</a> <button type="button" class="ghost-btn" style="margin-left:8px;" id="editTracker">Edit</button>`
+        : `<button type="button" class="ghost-btn" id="editTracker">Add an alternative tracker link (optional)</button>`}
+    </div>`;
+  }
+
+  function emergencyHTML(editing){
+    const DEFAULT_CONTACTS = "Peaksneng project contact (Better Lives): Reynaldo Diez, +855 17 378 344\n\nCardamom trek agency (Asia Adventures - Pagna): pagna@asia-adventures.com, mob +855 92 997 777, operations +855 92 904 206\n\nVietnam agent (Footprint): takes over at the Bavet/Moc Bai border and transfers the team to the airport on 3 Aug\n\nAdd True Adventure's 24hr emergency line and your travel insurance details below once you have them.";
+    const saved = localStorage.getItem("emergency-info");
+    const display = saved!==null ? saved : DEFAULT_CONTACTS;
+    if (editing){
+      return `<div class="info-card">
+        <h4>🆘 Emergency &amp; key contacts</h4>
+        <textarea id="emergencyInput" rows="5" aria-label="Emergency contact details">${display}</textarea>
+        <button type="button" class="card-btn" id="saveEmergency">Save</button>
+      </div>`;
+    }
+    return `<div class="info-card">
+      <h4>🆘 Emergency &amp; key contacts</h4>
+      <p>${display.replace(/</g,'&lt;')}</p>
+      <button type="button" class="card-btn secondary" id="editEmergency">Edit</button>
+    </div>`;
+  }
+
+  function photoHTML(editing){
+    const DEFAULT_INSTAGRAM = "https://www.instagram.com/gacambodia2026/";
+    const saved = localStorage.getItem("photo-album-url");
+    const link = saved !== null ? saved : DEFAULT_INSTAGRAM;
+    if (editing){
+      return `<div class="info-card">
+        <h4>📷 Team photos</h4>
+        <input type="url" id="photoInput" aria-label="Photo album link" placeholder="Paste a photo link here (e.g. Instagram, Google Photos, WhatsApp)" value="${link.replace(/"/g,'&quot;')}">
+        <button type="button" class="card-btn" id="savePhoto">Save</button>
+      </div>`;
+    }
+    return `<div class="info-card">
+      <h4>📷 Team photos</h4>
+      <p class="placeholder" style="margin-bottom:10px;">The school posts daily updates (signal permitting) to a private Instagram account. Request access, then wait to be approved — it's one-way, so please don't reply on it.</p>
+      <a class="card-btn link" href="${link}" target="_blank" rel="noreferrer">Open @gacambodia2026 ↗</a>
+      <button type="button" class="ghost-btn" style="margin-left:8px;" id="editPhoto">Edit link</button>
+    </div>`;
+  }
+
+  function personHTML(editing){
+    if (editing){
+      return `<div class="info-card">
+        <h4>⚙️ Whose trip is this?</h4>
+        <p class="placeholder" style="margin-bottom:10px;">This app is built for the George Abbot T2 2026 itinerary — any family on the same trip can use their own copy of this file and personalize it here.</p>
+        <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">Name</label>
+        <input type="text" id="personNameInput" aria-label="Traveler's name" value="${NAME_SAFE}" maxlength="40">
+        <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">Pronouns</label>
+        <select id="personPronounInput" aria-label="Traveler's pronouns" style="width:100%;border-radius:8px;border:1.5px solid #C9BFA6;padding:8px 10px;font-size:15px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+          <option value="he" ${PRONOUN_KEY==="he"?"selected":""}>He / him</option>
+          <option value="she" ${PRONOUN_KEY==="she"?"selected":""}>She / her</option>
+          <option value="they" ${PRONOUN_KEY==="they"?"selected":""}>They / them</option>
+        </select>
+        <button type="button" class="card-btn" id="savePerson">Save &amp; reload</button>
+      </div>`;
+    }
+    return `<div class="info-card">
+      <h4>⚙️ Whose trip is this?</h4>
+      <p>Currently set up for <b>${NAME_SAFE}</b> (${escapeHtml(P.subj)}/${escapeHtml(P.obj)}).</p>
+      <button type="button" class="card-btn secondary" id="editPerson">Change name / pronouns</button>
+    </div>`;
+  }
+
+  function render(){
+    el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
+    bindTopLevel();
+  }
+  function bindTopLevel(){
+    const editPe = document.getElementById("editPerson");
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(true) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    const editTr = document.getElementById("editTracker");
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    const editEm = document.getElementById("editEmergency");
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
+    const editPh = document.getElementById("editPhoto");
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
+  }
+  function bindEditing(){
+    const savePe = document.getElementById("savePerson");
+    if (savePe) savePe.addEventListener("click", ()=>{
+      const newName = document.getElementById("personNameInput").value.trim() || "Marcus";
+      const newPronoun = document.getElementById("personPronounInput").value;
+      localStorage.setItem("traveler-name", newName);
+      localStorage.setItem("traveler-pronoun", newPronoun);
+      location.reload();
+    });
+    const saveTr = document.getElementById("saveTracker");
+    if (saveTr) saveTr.addEventListener("click", ()=>{
+      localStorage.setItem("live-tracker-url", document.getElementById("trackerInput").value.trim());
+      render();
+    });
+    const cancelTr = document.getElementById("cancelTracker");
+    if (cancelTr) cancelTr.addEventListener("click", render);
+    const saveEm = document.getElementById("saveEmergency");
+    if (saveEm) saveEm.addEventListener("click", ()=>{
+      localStorage.setItem("emergency-info", document.getElementById("emergencyInput").value.trim());
+      render();
+    });
+    const savePh = document.getElementById("savePhoto");
+    if (savePh) savePh.addEventListener("click", ()=>{
+      localStorage.setItem("photo-album-url", document.getElementById("photoInput").value.trim());
+      render();
+    });
+    bindTopLevel();
+  }
+  render();
+})();
+
+/* ---------------- Tabs ---------------- */
+(function(){
+  const TAB_KEY = "marcus-active-tab";
+  const buttons = [...document.querySelectorAll(".tab-btn")];
+  const panels = [...document.querySelectorAll(".tab-panel")];
+
+  function activate(tab, { skipSave } = {}){
+    buttons.forEach(b=>{
+      const on = b.dataset.tab === tab;
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    panels.forEach(p=>{
+      p.classList.toggle("active", p.dataset.tab === tab);
+    });
+    if (tab === "map" && typeof map !== "undefined"){
+      // Leaflet can't correctly measure its container while it's display:none (which it was,
+      // sitting in an inactive tab, when the map first initialized). Now that the panel is
+      // visible, tell it to re-measure and re-centre — without this, tiles render blank/grey
+      // and the initial view can be wrong.
+      setTimeout(()=>{
+        map.invalidateSize();
+        map.fitBounds(routeBounds);
+      }, 50);
+    }
+    if (!skipSave){
+      try { localStorage.setItem(TAB_KEY, tab); } catch(e){}
+    }
+    // scroll the tab bar to keep the active button in view, and reset panel scroll position
+    const activeBtn = buttons.find(b=>b.dataset.tab===tab);
+    if (activeBtn && typeof activeBtn.scrollIntoView === "function"){
+      try { activeBtn.scrollIntoView({ behavior:"smooth", inline:"center", block:"nearest" }); } catch(e){}
+    }
+    if (typeof window.scrollTo === "function"){
+      try { window.scrollTo({ top: 0, behavior:"auto" }); } catch(e){}
+    }
+  }
+
+  buttons.forEach(b=> b.addEventListener("click", ()=> activate(b.dataset.tab)));
+
+  // default: last-used tab if the trip is already underway or finished (people jump back to where they were),
+  // otherwise start on Info before departure since that's what's most useful pre-trip
+  let initial = "info";
+  try {
+    const savedTab = localStorage.getItem(TAB_KEY);
+    if (savedTab && buttons.some(b=>b.dataset.tab===savedTab)) initial = savedTab;
+    else if (status !== "before") initial = "map";
+  } catch(e){}
+  activate(initial, { skipSave:true });
+
+  // expose a small helper other parts of the page can use to jump tabs (e.g. Google Maps links stay external,
+  // but a future "view on map" affordance from the itinerary tab could reuse this)
+  window.__gotoTab = activate;
+})();
+
+/* ---------------- Offline support ---------------- */
+// Service workers only run when the page is served over http(s) (e.g. GitHub Pages),
+// not when opened as a local file — so this quietly does nothing until the app is hosted.
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
