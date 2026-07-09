@@ -121,8 +121,10 @@
   .flight-status { font-weight:600; margin-top:3px; font-size:13px; }
   .flight-row.live .flight-status { color:#3F7248; }
   .flight-row.done .flight-status { color:#8A6D3B; }
-  .flight-track-btn { background:#fff; color:#1B4332; border:1.5px solid #1B4332; padding:9px 14px; font-size:13.5px; white-space:nowrap; flex-shrink:0; }
+  .flight-track-btn { background:#fff; color:#1B4332; border:1.5px solid #1B4332; white-space:nowrap; flex-shrink:0; align-self:center; width:auto; }
   .flight-track-btn-live { background:#3F7248; color:#F6F1E7; border-color:#3F7248; animation:flightPulse 1.8s ease-in-out infinite; }
+  .portal-btn-group { display:flex; flex-direction:column; gap:8px; }
+  .portal-btn { display:block; width:100%; text-align:center; box-sizing:border-box; }
   @keyframes flightPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(63,114,72,.5); } 50%{ box-shadow:0 0 0 7px rgba(63,114,72,0); } }
 
   .notes-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
@@ -972,9 +974,11 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     return `<div class="info-card">
       <h4>🛰 True Adventure Portal</h4>
       <p class="placeholder" style="margin-bottom:10px;">Official updates, itinerary and documents all live here — log in with your own saved password (Safari will offer to fill it in).</p>
-      ${liveUrl ? `<a class="card-btn link" style="background:#3F7248;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a>` : ""}
-      <a class="card-btn link" style="margin-left:8px;" href="${TRACKER_PAGE_URL}" target="_blank" rel="noreferrer">Tracker portal page ↗</a>
-      <a class="card-btn link" style="margin-left:8px;background:#8A6D3B;" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Message Board ↗</a>
+      <div class="portal-btn-group">
+        ${liveUrl ? `<a class="card-btn link portal-btn" style="background:#3F7248;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a>` : ""}
+        <a class="card-btn link portal-btn" href="${TRACKER_PAGE_URL}" target="_blank" rel="noreferrer">Tracker portal page ↗</a>
+        <a class="card-btn link portal-btn" style="background:#8A6D3B;" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Message Board ↗</a>
+      </div>
       <p class="placeholder" style="margin:12px 0 8px;">If the live tracker ever shows nothing, remember it can take a few hours to update after landing or overnight — that's normal, not a fault.</p>
       <button type="button" class="ghost-btn" id="editTracker">${liveUrl ? "Edit tracker link" : "Add tracker link"}</button>
     </div>`;
@@ -1040,19 +1044,26 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     </div>`;
   }
 
+  function aboutDesignHTML(){
+    return `<div class="info-card">
+      <h4>🎨 Why these colours?</h4>
+      <p class="placeholder">Not just a random theme — dark jungle green nods to the Cardamom rainforest the trek passes through, gold echoes temple stone and gilding like Angkor Wat, cream instead of stark white gives it a field-journal feel rather than a generic app, and a muted red nods to Khmer architecture. Built to feel like <i>this</i> trip, not a template.</p>
+    </div>`;
+  }
+
   function render(){
-    el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
+    el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML();
     bindTopLevel();
   }
   function bindTopLevel(){
     const editPe = document.getElementById("editPerson");
-    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
     const editTr = document.getElementById("editTracker");
-    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
     const editEm = document.getElementById("editEmergency");
-    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(true) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
     const editPh = document.getElementById("editPhoto");
-    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(true) + aboutDesignHTML(); bindEditing(); });
   }
   function bindEditing(){
     const savePe = document.getElementById("savePerson");
