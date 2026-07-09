@@ -29,12 +29,11 @@
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
   h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
+  #mapWrapper { position:relative; }
   #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; }
-  @media (pointer: fine) {
-    #map { resize:vertical; overflow:hidden; min-height:300px; max-height:85vh; }
-  }
-  .map-resize-hint { display:none; font-size:11.5px; color:#948C79; text-align:right; margin:4px 2px 0; }
-  @media (pointer: fine) { .map-resize-hint { display:block; } }
+  .map-resize-handle { display:none; position:absolute; right:6px; bottom:6px; width:30px; height:30px; border-radius:8px; background:rgba(27,67,50,0.85); color:#fff; align-items:center; justify-content:center; font-size:16px; cursor:nwse-resize; z-index:500; user-select:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  @media (pointer: fine) { .map-resize-handle { display:flex; } }
+  .map-resize-handle:hover { background:#1B4332; }
   .map-controls { background:#FBF8F1; border:1.5px solid #E4DCC8; border-top:none; border-bottom-left-radius:16px; border-bottom-right-radius:16px; padding:12px 14px; margin-top:-1px; }
   .map-controls .chip-row { display:flex; flex-wrap:wrap; gap:8px; }
   .map-controls .chip { display:flex; align-items:center; gap:6px; font-size:16px; padding:11px 14px; border-radius:22px; border:1.5px solid #C9BFA6; background:#fff; cursor:pointer; user-select:none; min-height:44px; }
@@ -168,8 +167,10 @@
 
   <section class="tab-panel" data-tab="map" role="tabpanel" aria-labelledby="tabbtn-map">
     <h3 class="section" style="margin-top:0;">Route map</h3>
-    <div id="map" role="application" aria-label="Interactive route map of the expedition through Cambodia and Vietnam. Numbered markers show stops in travel order. The same information is available in the itinerary tab."></div>
-    <p class="map-resize-hint">↕ drag the bottom-right corner to resize</p>
+    <div id="mapWrapper">
+      <div id="map" role="application" aria-label="Interactive route map of the expedition through Cambodia and Vietnam. Numbered markers show stops in travel order. The same information is available in the itinerary tab."></div>
+      <div id="mapResizeHandle" class="map-resize-handle" title="Drag to resize the map" aria-hidden="true">⤡</div>
+    </div>
     <div id="mapControls" class="map-controls"></div>
   </section>
 
@@ -559,8 +560,8 @@ const map = L.map('map', { scrollWheelZoom:false, closePopupOnClick:true });
 L.Popup.mergeOptions({ closeButton:false });
 // Leaflet's zoom +/- controls are also anchors — strip their hrefs so no viewer treats them as links
 map.whenReady(()=>{ document.querySelectorAll('.leaflet-control-zoom a').forEach(a=>a.removeAttribute('href')); });
-// when the map is manually resized (drag handle, desktop only), Leaflet needs telling to
-// re-measure itself and redraw — otherwise the map view stays cropped to its old size
+// when the map is manually resized, Leaflet needs telling to re-measure itself and redraw —
+// otherwise the map view stays cropped to its old size
 if (typeof ResizeObserver !== "undefined"){
   let resizeDebounce;
   const mapEl = document.getElementById("map");
@@ -569,6 +570,51 @@ if (typeof ResizeObserver !== "undefined"){
     resizeDebounce = setTimeout(()=>{ try { map.invalidateSize(); } catch(e){} }, 120);
   }).observe(mapEl);
 }
+
+// custom drag-to-resize handle (desktop only) — a visible grip in the corner, since the native
+// CSS `resize` handle turned out to be invisible once rounded corners + overflow:hidden clipped
+// away the tiny grip browsers normally draw
+(function(){
+  const handle = document.getElementById("mapResizeHandle");
+  const mapEl = document.getElementById("map");
+  if (!handle || !mapEl) return;
+  let startX = 0, startY = 0, startWidth = 0, startHeight = 0, dragging = false;
+  const MIN_H = 300, MAX_H = Math.round(window.innerHeight * 0.85);
+  const MIN_W = 300, MAX_W = Math.round(window.innerWidth * 0.95);
+
+  function onMove(e){
+    if (!dragging) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const newHeight = Math.max(MIN_H, Math.min(MAX_H, startHeight + (y - startY)));
+    const newWidth = Math.max(MIN_W, Math.min(MAX_W, startWidth + (x - startX)));
+    mapEl.style.height = newHeight + "px";
+    mapEl.style.width = newWidth + "px";
+    if (e.cancelable) e.preventDefault();
+  }
+  function onUp(){
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = "";
+    try { map.invalidateSize(); } catch(e){}
+  }
+  function onDown(e){
+    dragging = true;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    const rect = mapEl.getBoundingClientRect();
+    startWidth = rect.width;
+    startHeight = rect.height;
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  }
+  handle.addEventListener("mousedown", onDown);
+  handle.addEventListener("touchstart", onDown, { passive:false });
+  window.addEventListener("mousemove", onMove, { passive:false });
+  window.addEventListener("touchmove", onMove, { passive:false });
+  window.addEventListener("mouseup", onUp);
+  window.addEventListener("touchend", onUp);
+})();
 
 const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
   attribution:'&copy; <a href="https://www.esri.com">Esri</a> &copy; OpenStreetMap contributors', maxZoom:18
