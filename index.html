@@ -75,7 +75,7 @@
   @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(201,166,107,.6); } 50%{ box-shadow:0 0 0 8px rgba(201,166,107,0); } }
   .countdown-row { display:flex; gap:10px; margin:14px 0 0; }
   .countdown-box { flex:1; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 12px; text-align:center; }
-  .countdown-num { font-family:'Fraunces',serif; font-size:32px; font-weight:700; color:#C9A66B; line-height:1; }
+  .countdown-num { font-family:'Fraunces',serif; font-size:25px; font-weight:700; color:#C9A66B; line-height:1.1; white-space:nowrap; }
   .countdown-lbl { font-size:14px; opacity:.8; margin-top:4px; }
   .there-now { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 14px; margin-top:10px; font-size:16px; line-height:1.5; }
   .there-now .tn-head { font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:1px; text-transform:uppercase; color:#C9A66B; margin-bottom:3px; }
@@ -107,6 +107,13 @@
   .info-card .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
 
   .wa-link { font-size:14px; font-weight:600; text-decoration:none; color:#3F7248; margin-left:14px; }
+  .flight-row { border-top:1px solid #E4DCC8; padding:10px 0; font-size:14px; }
+  .flight-row:first-of-type { border-top:none; padding-top:0; }
+  .flight-main { font-size:15px; }
+  .flight-times { color:#6B6455; font-family:'JetBrains Mono',monospace; font-size:12.5px; margin-top:3px; }
+  .flight-status { font-weight:600; margin-top:3px; font-size:13px; }
+  .flight-row.live .flight-status { color:#3F7248; }
+  .flight-row.done .flight-status { color:#8A6D3B; }
 
   .notes-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
   .ghost-btn { background:#fff; border:1.5px solid #C9BFA6; border-radius:10px; padding:9px 14px; font-size:14px; font-weight:600; color:#1B4332; cursor:pointer; min-height:44px; }
@@ -375,16 +382,24 @@ document.getElementById("progressFill").style.width =
   const now = new Date();
   const start = new Date(TRIP_START+"T14:30:00+01:00"); // EK16 departure
   const home = new Date(TRIP_END+"T12:35:00+01:00");    // EK15 arrival
-  const daysTo = d => Math.max(0, Math.ceil((d-now)/86400000));
+  function timeTo(d){
+    const ms = Math.max(0, d-now);
+    const totalHours = ms/3600000;
+    const days = Math.floor(totalHours/24);
+    const hours = Math.floor(totalHours%24);
+    return { days, hours, label: days>0 ? `${days}d ${hours}h` : `${hours}h` };
+  }
   const el = document.getElementById("countdownRow");
   if (status==="before"){
+    const t = timeTo(start);
     el.innerHTML = `
-      <div class="countdown-box"><div class="countdown-num">${daysTo(start)}</div><div class="countdown-lbl">days until departure</div></div>
+      <div class="countdown-box"><div class="countdown-num">${t.label}</div><div class="countdown-lbl">until departure</div></div>
       <div class="countdown-box"><div class="countdown-num">19</div><div class="countdown-lbl">days of adventure</div></div>`;
   } else if (status==="during"){
+    const t = timeTo(home);
     el.innerHTML = `
       <div class="countdown-box"><div class="countdown-num">${currentDayNum}</div><div class="countdown-lbl">day of the trip</div></div>
-      <div class="countdown-box"><div class="countdown-num">${daysTo(home)}</div><div class="countdown-lbl">days until he's home 🏡</div></div>`;
+      <div class="countdown-box"><div class="countdown-num">${t.label}</div><div class="countdown-lbl">until he's home 🏡</div></div>`;
   } else {
     el.innerHTML = `<div class="countdown-box"><div class="countdown-num">🎉</div><div class="countdown-lbl">He's home!</div></div>`;
   }
@@ -768,6 +783,44 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   const PORTAL_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49121/message-board";
   const TRACKER_PAGE_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49569/tracker";
 
+  const FLIGHTS = [
+    { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
+    { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:null,                          arr:"2026-07-18T16:35:00+07:00" },
+    { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
+    { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
+  ];
+  function flightStatus(f, prevArr){
+    const now = new Date();
+    const arr = new Date(f.arr);
+    const dep = f.dep ? new Date(f.dep) : (prevArr || null);
+    if (now >= arr) return { label:"Landed ✅", cls:"done" };
+    if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
+    if (!f.dep && prevArr && now >= prevArr) return { label:"In transit ✈️", cls:"live" };
+    return { label:"Scheduled", cls:"" };
+  }
+  function flightsHTML(){
+    let prevArr = null;
+    const rows = FLIGHTS.map(f=>{
+      const st = flightStatus(f, prevArr);
+      prevArr = new Date(f.arr);
+      const depStr = f.dep ? new Date(f.dep).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+      const arrStr = new Date(f.arr).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+      return `<div class="flight-row ${st.cls}">
+        <div class="flight-main">
+          <b>${f.no}</b> ${f.from} → ${f.to}
+          <a href="https://www.flightradar24.com/data/flights/${f.no.toLowerCase()}" target="_blank" rel="noreferrer" class="wa-link" style="margin-left:8px;font-size:12.5px;">Track live ↗</a>
+        </div>
+        <div class="flight-times">Dep ${depStr} &middot; Arr ${arrStr}</div>
+        <div class="flight-status">${st.label}</div>
+      </div>`;
+    }).join("");
+    return `<div class="info-card">
+      <h4>✈️ Flights</h4>
+      <p class="placeholder" style="margin-bottom:10px;">Status here is estimated from the published schedule, not live data. Tap "Track live" on any flight for the real position via Flightradar24 — most useful once it's actually in the air.</p>
+      ${rows}
+    </div>`;
+  }
+
   function beforeYouGoHTML(){
     if (status !== "before") return ""; // only relevant pre-departure
     return `<div class="info-card">
@@ -867,18 +920,18 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function render(){
-    el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
+    el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
     bindTopLevel();
   }
   function bindTopLevel(){
     const editPe = document.getElementById("editPerson");
-    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(true) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(true) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
     const editTr = document.getElementById("editTracker");
-    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
     const editEm = document.getElementById("editEmergency");
-    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
     const editPh = document.getElementById("editPhoto");
-    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + flightsHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
   }
   function bindEditing(){
     const savePe = document.getElementById("savePerson");
