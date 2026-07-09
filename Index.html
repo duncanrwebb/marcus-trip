@@ -380,7 +380,7 @@ document.getElementById("progressFill").style.width =
 /* Countdown boxes */
 (function(){
   const now = new Date();
-  const start = new Date(TRIP_START+"T14:30:00+01:00"); // EK16 departure
+  const start = new Date(TRIP_START+"T10:30:00+01:00"); // coach departs school (the real "goodbye" moment)
   const home = new Date(TRIP_END+"T12:35:00+01:00");    // EK15 arrival
   function timeTo(d){
     const ms = Math.max(0, d-now);
