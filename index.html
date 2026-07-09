@@ -419,13 +419,14 @@ document.getElementById("progressFill").style.width =
   }, 30000);
 
   if (!isUKleg){
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code&timezone=Asia%2FBangkok`)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia%2FBangkok`)
       .then(r=>r.json())
       .then(d=>{
         if (!d.current) return;
         const codes = {0:"clear ☀️",1:"mostly clear 🌤",2:"partly cloudy ⛅",3:"overcast ☁️",45:"foggy 🌫",51:"drizzle 🌦",61:"light rain 🌧",63:"rain 🌧",65:"heavy rain ⛈",80:"showers 🌦",81:"showers 🌧",82:"heavy showers ⛈",95:"thunderstorm ⛈"};
         const desc = codes[d.current.weather_code] || "—";
-        draw(`🌡 <b>${Math.round(d.current.temperature_2m)}°C</b> and ${desc} (July is monsoon season — warm rain most afternoons is normal)`);
+        const humidity = d.current.relative_humidity_2m != null ? ` · 💧 ${Math.round(d.current.relative_humidity_2m)}% humidity` : "";
+        draw(`🌡 <b>${Math.round(d.current.temperature_2m)}°C</b> and ${desc}${humidity} (July is monsoon season — warm, humid air is normal)`);
       })
       .catch(()=>{}); // weather is a bonus; fail silently
   }
@@ -765,26 +766,43 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   const el = document.getElementById("infoCards");
 
   const PORTAL_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49121/message-board";
+  const TRACKER_PAGE_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49569/tracker";
+
+  function beforeYouGoHTML(){
+    if (status !== "before") return ""; // only relevant pre-departure
+    return `<div class="info-card">
+      <h4>✅ Before you go</h4>
+      <ul style="margin:0 0 4px;padding-left:20px;font-size:15px;line-height:1.7;color:#3A3F3B;">
+        <li><b>Cambodia E-arrival QR code</b> — can be done from 12 Jul. Bring 2 photocopies to kit check.</li>
+        <li><b>Kit check</b> — Thu 16 Jul, 12:30&ndash;3:00pm, 6th Form Common Room. All kit checked by trek leaders.</li>
+        <li><b>3 passport photos</b> — one handed in at kit check, two kept by ${NAME_SAFE} in a (ideally waterproof) document wallet with passport, visa &amp; QR code.</li>
+        <li><b>Coach to airport</b> — on site outside Raynham Hall by 10:00am Fri 17 Jul. Coach leaves 10:30am sharp.</li>
+        <li><b>No phones</b> — a digital camera and watch instead. Updates come via the school's Instagram (see below).</li>
+      </ul>
+      <p class="placeholder" style="margin-top:8px;">${NAME_SAFE} carries one item of group kit too, so pack with a bit of spare room.</p>
+    </div>`;
+  }
 
   function trackerHTML(editing){
     const saved = localStorage.getItem("live-tracker-url") || "";
     if (editing){
       return `<div class="info-card">
         <h4>🛰 True Adventure Portal</h4>
-        <p class="placeholder" style="margin-bottom:10px;">Live tracker link (once True Adventure sends it):</p>
-        <input type="url" id="trackerInput" aria-label="Live tracker link" placeholder="Paste the live tracker URL here" value="${saved.replace(/"/g,'&quot;')}">
+        <p class="placeholder" style="margin-bottom:10px;">Only fill this in if the portal's own tracker link still isn't showing anything once activated — otherwise just use the "Open Expedition Tracker" button.</p>
+        <input type="url" id="trackerInput" aria-label="Alternative live tracker link" placeholder="Paste an alternative tracker URL here" value="${saved.replace(/"/g,'&quot;')}">
         <button type="button" class="card-btn" id="saveTracker">Save</button>
         <button type="button" class="ghost-btn" id="cancelTracker" style="margin-left:8px;">Cancel</button>
       </div>`;
     }
     return `<div class="info-card">
       <h4>🛰 True Adventure Portal</h4>
-      <p class="placeholder" style="margin-bottom:10px;">Official updates, the message board, itinerary and documents all live here — log in with your own saved password (Safari will offer to fill it in).</p>
-      <a class="card-btn link" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Open Message Board ↗</a>
-      <p class="placeholder" style="margin:12px 0 8px;">True Adventure confirmed: you'll be added to the tracker on the day ${NAME_SAFE} travels, but the link won't work until the team activates it in-country — this can take a few hours after landing, so don't worry if it's blank at first.</p>
+      <p class="placeholder" style="margin-bottom:10px;">Official updates, itinerary and documents all live here — log in with your own saved password (Safari will offer to fill it in).</p>
+      <a class="card-btn link" href="${TRACKER_PAGE_URL}" target="_blank" rel="noreferrer">🛰 Open Expedition Tracker ↗</a>
+      <a class="card-btn link" style="margin-left:8px;background:#3F7248;" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Open Message Board ↗</a>
+      <p class="placeholder" style="margin:12px 0 8px;">True Adventure confirmed: you'll be added to the tracker on the day ${NAME_SAFE} travels, but it won't show anything until the team activates it in-country — this can take a few hours after landing, so don't worry if it's blank at first.</p>
       ${saved
-        ? `<a class="card-btn link" style="background:#3F7248;" href="${saved}" target="_blank" rel="noreferrer">View Live Tracker ↗</a> <button type="button" class="ghost-btn" style="margin-left:8px;" id="editTracker">Edit tracker link</button>`
-        : `<button type="button" class="card-btn secondary" id="editTracker">Add live tracker link (once available)</button>`}
+        ? `<a class="card-btn link" style="background:#8A6D3B;" href="${saved}" target="_blank" rel="noreferrer">View alternative tracker link ↗</a> <button type="button" class="ghost-btn" style="margin-left:8px;" id="editTracker">Edit</button>`
+        : `<button type="button" class="ghost-btn" id="editTracker">Add an alternative tracker link (optional)</button>`}
     </div>`;
   }
 
@@ -807,19 +825,21 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function photoHTML(editing){
-    const saved = localStorage.getItem("photo-album-url") || "";
+    const DEFAULT_INSTAGRAM = "https://www.instagram.com/gacambodia2026/";
+    const saved = localStorage.getItem("photo-album-url");
+    const link = saved !== null ? saved : DEFAULT_INSTAGRAM;
     if (editing){
       return `<div class="info-card">
         <h4>📷 Team photos</h4>
-        <input type="url" id="photoInput" aria-label="Photo album link" placeholder="Paste the shared album link here (e.g. Google Photos, WhatsApp)" value="${saved.replace(/"/g,'&quot;')}">
+        <input type="url" id="photoInput" aria-label="Photo album link" placeholder="Paste a photo link here (e.g. Instagram, Google Photos, WhatsApp)" value="${link.replace(/"/g,'&quot;')}">
         <button type="button" class="card-btn" id="savePhoto">Save</button>
       </div>`;
     }
     return `<div class="info-card">
       <h4>📷 Team photos</h4>
-      ${saved
-        ? `<a class="card-btn link" href="${saved}" target="_blank" rel="noreferrer">View team photos ↗</a> <button type="button" class="ghost-btn" style="margin-left:8px;" id="editPhoto">Edit link</button>`
-        : `<p class="placeholder">If True Adventure or the school shares a photo album, paste the link here so it's one tap away.</p><button type="button" class="card-btn secondary" id="editPhoto">Add link</button>`}
+      <p class="placeholder" style="margin-bottom:10px;">The school posts daily updates (signal permitting) to a private Instagram account. Request access, then wait to be approved — it's one-way, so please don't reply on it.</p>
+      <a class="card-btn link" href="${link}" target="_blank" rel="noreferrer">Open @gacambodia2026 ↗</a>
+      <button type="button" class="ghost-btn" style="margin-left:8px;" id="editPhoto">Edit link</button>
     </div>`;
   }
 
@@ -847,18 +867,18 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function render(){
-    el.innerHTML = personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
+    el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false);
     bindTopLevel();
   }
   function bindTopLevel(){
     const editPe = document.getElementById("editPerson");
-    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(true) + trackerHTML(false) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
     const editTr = document.getElementById("editTracker");
-    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(true) + emergencyHTML(false) + photoHTML(false); bindEditing(); });
     const editEm = document.getElementById("editEmergency");
-    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(true) + photoHTML(false); bindEditing(); });
     const editPh = document.getElementById("editPhoto");
-    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = beforeYouGoHTML() + personHTML(false) + trackerHTML(false) + emergencyHTML(false) + photoHTML(true); bindEditing(); });
   }
   function bindEditing(){
     const savePe = document.getElementById("savePerson");
