@@ -107,13 +107,17 @@
   .info-card .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
 
   .wa-link { font-size:14px; font-weight:600; text-decoration:none; color:#3F7248; margin-left:14px; }
-  .flight-row { border-top:1px solid #E4DCC8; padding:10px 0; font-size:14px; }
+  .flight-row { border-top:1px solid #E4DCC8; padding:12px 0; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .flight-row:first-of-type { border-top:none; padding-top:0; }
+  .flight-info { flex:1; min-width:180px; }
   .flight-main { font-size:15px; }
   .flight-times { color:#6B6455; font-family:'JetBrains Mono',monospace; font-size:12.5px; margin-top:3px; }
   .flight-status { font-weight:600; margin-top:3px; font-size:13px; }
   .flight-row.live .flight-status { color:#3F7248; }
   .flight-row.done .flight-status { color:#8A6D3B; }
+  .flight-track-btn { background:#fff; color:#1B4332; border:1.5px solid #1B4332; padding:9px 14px; font-size:13.5px; white-space:nowrap; flex-shrink:0; }
+  .flight-track-btn-live { background:#3F7248; color:#F6F1E7; border-color:#3F7248; animation:flightPulse 1.8s ease-in-out infinite; }
+  @keyframes flightPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(63,114,72,.5); } 50%{ box-shadow:0 0 0 7px rgba(63,114,72,0); } }
 
   .notes-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
   .ghost-btn { background:#fff; border:1.5px solid #C9BFA6; border-radius:10px; padding:9px 14px; font-size:14px; font-weight:600; color:#1B4332; cursor:pointer; min-height:44px; }
@@ -805,13 +809,14 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       prevArr = new Date(f.arr);
       const depStr = f.dep ? new Date(f.dep).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
       const arrStr = new Date(f.arr).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+      const isLive = st.cls === "live";
       return `<div class="flight-row ${st.cls}">
-        <div class="flight-main">
-          <b>${f.no}</b> ${f.from} → ${f.to}
-          <a href="https://www.flightradar24.com/data/flights/${f.no.toLowerCase()}" target="_blank" rel="noreferrer" class="wa-link" style="margin-left:8px;font-size:12.5px;">Track live ↗</a>
+        <div class="flight-info">
+          <div class="flight-main"><b>${f.no}</b> ${f.from} → ${f.to}</div>
+          <div class="flight-times">Dep ${depStr} &middot; Arr ${arrStr}</div>
+          <div class="flight-status">${st.label}</div>
         </div>
-        <div class="flight-times">Dep ${depStr} &middot; Arr ${arrStr}</div>
-        <div class="flight-status">${st.label}</div>
+        <a href="https://www.flightradar24.com/data/flights/${f.no.toLowerCase()}" target="_blank" rel="noreferrer" class="card-btn link flight-track-btn ${isLive?'flight-track-btn-live':''}">${isLive?'✈️ Track live now':'Track live'} ↗</a>
       </div>`;
     }).join("");
     return `<div class="info-card">
