@@ -269,8 +269,8 @@ const FACTS = {
   14:`Tonight ${NAME_SAFE} sleeps in a hammock under jungle stars near the O'Malu waterfall — with almost no light pollution out here, the Milky Way is properly visible.`,
   15:`By tonight ${NAME_SAFE} will have trekked 74km in four days — nearly two marathons through jungle in tropical heat — finishing with a celebratory dinner back in the Chi Phat community that first welcomed ${P.obj}.`,
   16:"Phnom Penh means 'Penh's Hill' — legend says a widow named Penh found sacred statues in a floating tree and built a temple on the hill.",
-  17:`Crossing at Bavet/Moc Bai, ${NAME_SAFE} goes from the Kingdom of Wonder to the land of 60 million motorbikes — Ho Chi Minh City's traffic is legendary.`,
-  18:"Ho Chi Minh City is still called Saigon by most locals — and its Ben Thanh market has stood since 1914.",
+  17:`Crossing at Bavet/Moc Bai, ${NAME_SAFE} goes from the Kingdom of Wonder to Vietnam — where Ben Thanh Market in Ho Chi Minh City has stood since 1914 and you can barter for almost anything.`,
+  18:"The Cu Chi Tunnels today were built by the Viet Cong — over 250km of underground passages used during the Vietnam War. Some sections tourists can crawl through are still the original wartime size.",
   19:`After ~19,000km of travel, two countries, one jungle and a house built — welcome home, ${NAME_SAFE}! 🎉`,
 };
 
@@ -283,12 +283,12 @@ const SCHEDULES = {
   5:[[0,"asleep"],[5,"possibly up for sunrise at Angkor Wat"],[9,"travelling to Peaksneng"],[14,"meeting Rey from Better Lives, project briefing and buying supplies"],[19,"first evening in the village"],[22,"asleep"]],
   6:[[0,"asleep"],[7,"breakfast, then heading to the project site"],[8,"morning session — garden building with the family and Better Lives team"],[12,"midday break — too hot to work, resting until 2pm"],[14,"afternoon session continues"],[17,"finished for the day — free time or a village cultural activity"],[21,"asleep"]],
   10:[[0,"asleep"],[7,"saying goodbye to hosts"],[9,"on the ~6hr journey back to Phnom Penh"],[16,"arrived, maybe visiting the Royal Palace"],[19,"at the night markets — Khmer noodles or amok"],[22,"asleep"]],
-  11:[[0,"asleep"],[8,"collected from the hostel, 3-4hr drive to Andoung Tuek"],[12,"boarding the boat up the Preak Piphot River"],[15,"arriving at Chi Phat, meeting the homestay hosts"],[18,"short evening hike to Chrey Rapids"],[20,"dinner and trek briefing"],[21,"asleep"]],
+  11:[[0,"asleep"],[8,"collected from the hostel, 3-4hr drive to Andoung Tuek"],[12,"boarding the boat up the Preak Piphot River"],[15,"arriving at Chi Phat, meeting the trek guides"],[18,"short evening hike to Chhay Chrey Rapids"],[20,"dinner and trek briefing"],[21,"asleep"]],
   12:[[0,"asleep"],[6,"breakfast, meeting the trek guides"],[8,"trekking — 21km along old logging trails today"],[11,"at O'Spot waterfall — walking behind it to the bat cave"],[13,"lunch at Tuk Vet waterfall"],[15,"afternoon trekking"],[17,"arriving at O'Ampov campsite"],[20,"asleep — early nights on trek"]],
   15:[[0,"asleep"],[6,"final trek day begins — 14km"],[9,"hiking to Chhay Khpos waterfall"],[12,"lunch break at the waterfall"],[14,"final stretch back to Chi Phat"],[18,"celebratory community dinner!"],[21,"asleep"]],
   16:[[0,"asleep"],[5,"possibly up for the sunrise hike"],[9,"transfer back to Phnom Penh (~5.5hrs)"],[15,"free afternoon — sightseeing or shopping"],[20,"last night in Cambodia"],[22,"asleep"]],
   17:[[0,"asleep"],[7,"breakfast, then bus toward the border"],[11,"crossing at Bavet/Moc Bai into Vietnam"],[14,"on the road to Ho Chi Minh City"],[17,"exploring the markets"],[19,"final celebratory team meal!"],[23,"asleep"]],
-  18:[[0,"asleep"],[8,"sourcing breakfast, exploring Ho Chi Minh City"],[15,"heading to the airport"],[20,"at Tan Son Nhat airport"],[23,"boarding EK393 — heading home!"]],
+  18:[[0,"asleep"],[7,"sourcing breakfast before the early collection"],[9,"on the way to the Cu Chi Tunnels (2hrs from the city)"],[11,"exploring the Cu Chi Tunnels"],[13,"lunch at the tunnel entrance restaurant"],[15,"back in the city, visiting the War Remnants Museum"],[18,"returning to the hotel to collect luggage"],[20,"Footprint transfers the team to Tan Son Nhat airport"],[23,"boarding EK393 — heading home!"]],
   19:[[0,"in the air to Dubai"],[8,"transiting Dubai, boarding EK15"],[11,"in the air — final leg to Gatwick"],[18,"HOME! 🎉"]],
 };
 // days 7-9 share day 6's village rhythm; days 13-14 share day 12's trek rhythm
@@ -330,7 +330,7 @@ const DAYS = [
   {n:10,date:"2026-07-26",loc:"Peaksneng → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
    summary:"Say goodbye to hosts, ~6hr journey back to Phnom Penh. Evening at the night markets."},
   {n:11,date:"2026-07-27",loc:"Phnom Penh → Chi Phat",phase:"travel",photo:"chiphat",map:"chiphat",lat:11.3286123,lng:103.5240783,
-   summary:"08:00 collection, 3-4hr drive to Andoung Tuek, then a 2hr boat ride up the Preak Piphot River to Chi Phat — spotting monkeys, flying squirrels and birds along the way. In the evening, a short 2km hike to Chrey Rapids with a local guide."},
+   summary:"08:00 collection, 3-4hr drive to Andoung Tuek, then a 2hr boat ride up the Preak Piphot River to Chi Phat — spotting monkeys, flying squirrels and birds along the way. In the evening, a short 2km hike to Chhay Chrey Rapids with a local guide."},
   {n:12,date:"2026-07-28",loc:"Chi Phat → O'Ampov",phase:"trek",photo:"chiphat",map:"chiphat",lat:11.28,lng:103.42,
    summary:"Trek 21km (7-8hrs) along old logging trails with wide Cardamom views. Explores the 'hidden' O'Spot waterfall — walking behind it to a bat cave — with lunch at Tuk Vet waterfall, before camping at O'Ampov."},
   {n:13,date:"2026-07-29",loc:"O'Ampov → O'Peam Krovanh",phase:"trek",photo:null,map:null,lat:11.24,lng:103.38,
@@ -342,9 +342,9 @@ const DAYS = [
   {n:16,date:"2026-08-01",loc:"Chi Phat → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
    summary:"Sunrise hike, then transfer (~5.5hrs) back to Phnom Penh. Free afternoon for sightseeing or shopping."},
   {n:17,date:"2026-08-02",loc:"Phnom Penh → Ho Chi Minh City",phase:"border",photo:"hcmc",map:"hcmc",lat:10.8230989,lng:106.6296638,
-   summary:"Bus to the Bavet/Moc Bai border, met by the Vietnam agent, on to Ho Chi Minh City. Markets and a final celebratory meal."},
+   summary:"Asia Adventures buses the team to the Bavet/Moc Bai border, where the Vietnam agent (Footprint) takes over for the drive into Ho Chi Minh City. Wander the alleyways to Ben Thanh Market, organise a final celebratory meal, or explore the city."},
   {n:18,date:"2026-08-03",loc:"Ho Chi Minh City → in transit",phase:"travel",photo:"hcmc",map:"hcmc",lat:10.8230989,lng:106.6296638,
-   summary:"Free morning exploring HCMC, private bus to the airport. Depart Tan Son Nhat 23:50 on EK393."},
+   summary:"Collected at 8:30am for the pre-paid 2hr trip to the Cu Chi Tunnels — lunch at the tunnel entrance, then back to the city to visit the War Remnants Museum. Footprint then transfers the team to the airport. Depart Tan Son Nhat on EK393 at 23:50."},
   {n:19,date:"2026-08-04",loc:"Dubai → home",phase:"home",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
    summary:"Arrive Dubai 04:00, depart EK15 08:00, land London Gatwick 12:35. Welcome home!"},
 ];
@@ -789,7 +789,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function emergencyHTML(editing){
-    const DEFAULT_CONTACTS = "Peaksneng project contact (Better Lives): Reynaldo Diez, +855 17 378 344\n\nCardamom trek agency (Asia Adventures - Pagna): pagna@asia-adventures.com, mob +855 92 997 777, operations +855 92 904 206\n\nAdd True Adventure's 24hr emergency line and your travel insurance details below once you have them.";
+    const DEFAULT_CONTACTS = "Peaksneng project contact (Better Lives): Reynaldo Diez, +855 17 378 344\n\nCardamom trek agency (Asia Adventures - Pagna): pagna@asia-adventures.com, mob +855 92 997 777, operations +855 92 904 206\n\nVietnam agent (Footprint): takes over at the Bavet/Moc Bai border and transfers the team to the airport on 3 Aug\n\nAdd True Adventure's 24hr emergency line and your travel insurance details below once you have them.";
     const saved = localStorage.getItem("emergency-info");
     const display = saved!==null ? saved : DEFAULT_CONTACTS;
     if (editing){
