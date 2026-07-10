@@ -31,8 +31,8 @@
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
   h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
-  #mapWrapper { position:relative; }
-  #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; }
+  #mapWrapper { position:relative; margin-left:auto; margin-right:auto; }
+  #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; margin-left:auto; margin-right:auto; display:block; }
   .map-resize-handle { display:none; position:absolute; right:6px; bottom:6px; width:30px; height:30px; border-radius:8px; background:rgba(27,67,50,0.85); color:#fff; align-items:center; justify-content:center; font-size:16px; cursor:nwse-resize; z-index:500; user-select:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
   @media (pointer: fine) { .map-resize-handle { display:flex; } }
   .map-resize-handle:hover { background:#1B4332; }
@@ -242,6 +242,59 @@ function getLiveTrackerUrl(){
   const saved = localStorage.getItem("live-tracker-url");
   return saved !== null ? saved : DEFAULT_LIVE_TRACKER;
 }
+
+// Real flight schedule, shared by the Flights card, the "over there right now" hero widget,
+// and the "right now he's probably" line — one source of truth, all timezone-correct since
+// every timestamp below carries its own explicit UTC offset.
+const FLIGHTS = [
+  { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
+  { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:null,                          arr:"2026-07-18T16:35:00+07:00" },
+  { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
+  { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
+];
+function flightStatus(f, prevArr){
+  const now = new Date();
+  const arr = new Date(f.arr);
+  const dep = f.dep ? new Date(f.dep) : (prevArr || null);
+  if (now >= arr) return { label:"Landed ✅", cls:"done" };
+  if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
+  if (!f.dep && prevArr && now >= prevArr) return { label:"In transit ✈️", cls:"live" };
+  return { label:"Scheduled", cls:"" };
+}
+
+// Days 1, 2, 18 and 19 are travel days that cross several timezones in a single calendar day
+// (UK → Dubai → Cambodia/Vietnam, or the reverse). A single "what's the local hour there"
+// lookup doesn't make sense for these days — instead, compare the real clock directly against
+// the actual flight departure/arrival times, which are unambiguous regardless of timezone.
+// Returns null for days 3-17, where the destination-local-hour approach is genuinely correct
+// throughout the day.
+function travelStatusText(dayNum){
+  const now = new Date();
+  if (dayNum === 1){
+    const dep = new Date(FLIGHTS[0].dep);
+    if (now < dep) return `still in the UK — coach/flight to Gatwick, departs ${dep.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
+    return "in the air ✈️ — EK16 heading to Dubai";
+  }
+  if (dayNum === 2){
+    const arrDubai = new Date(FLIGHTS[0].arr), arrPP = new Date(FLIGHTS[1].arr);
+    if (now < arrDubai) return "in the air ✈️ — EK16 heading to Dubai";
+    if (now < arrPP) return "in transit ✈️ — Dubai to Phnom Penh (EK348)";
+    return "landed in Phnom Penh — settling in";
+  }
+  if (dayNum === 18){
+    const dep = new Date(FLIGHTS[2].dep);
+    if (now < dep) return "free time in Ho Chi Minh City, then heading to the airport";
+    return "in the air ✈️ — EK393 heading home, via Dubai";
+  }
+  if (dayNum === 19){
+    const arrDubai = new Date(FLIGHTS[2].arr), depDubai = new Date(FLIGHTS[3].dep), arrHome = new Date(FLIGHTS[3].arr);
+    if (now < arrDubai) return "in the air ✈️ — EK393 heading to Dubai";
+    if (now < depDubai) return "transiting Dubai airport, boarding EK15 soon";
+    if (now < arrHome) return "in the air ✈️ — final leg home on EK15";
+    return "HOME! 🎉";
+  }
+  return null;
+}
 document.title = IS_DEFAULT ? "Expedition Log" : `${NAME_SAFE}'s Expedition Log`;
 try {
   const manifestLink = document.querySelector('link[rel="manifest"]');
@@ -443,6 +496,9 @@ document.getElementById("progressFill").style.width =
   const inVietnam = status==="during" && currentDayNum>=17;
   const placeName = status==="before" ? "Phnom Penh" : inVietnam ? "Ho Chi Minh City" : (currentDay ? currentDay.loc.split('→').pop().trim() : "Phnom Penh");
   const lat = currentDay ? currentDay.lat : 11.556, lng = currentDay ? currentDay.lng : 104.928;
+  // Travel days genuinely cross timezones within one calendar day — a single "local time
+  // there" reading doesn't mean much while he's still airborne or on the ground in the UK/Dubai.
+  const travelDay = currentDay && [1,2,18,19].includes(currentDay.n);
   const isUKleg = currentDay && (currentDay.n===1 || currentDay.n===19);
 
   function renderTime(){
@@ -452,6 +508,12 @@ document.getElementById("progressFill").style.width =
     return { t, vibe };
   }
   function draw(weatherStr){
+    if (status==="during" && travelDay){
+      // travel days: show real flight status instead of a timezone-confused "local time" guess
+      el.innerHTML = `<div class="tn-head">Over there right now</div>
+        ✈️ <b>${travelStatusText(currentDay.n)}</b>`;
+      return;
+    }
     const {t,vibe} = renderTime();
     el.innerHTML = `<div class="tn-head">Over there right now</div>
       🕐 <b>${t}</b> in ${placeName} — ${vibe}${weatherStr ? `<br>${weatherStr}` : ""}`;
@@ -486,6 +548,11 @@ document.getElementById("progressFill").style.width =
 })();
 
 function rightNowLine(dayNum){
+  // travel days: real flight-based status, timezone-correct regardless of time of day
+  const travel = travelStatusText(dayNum);
+  if (travel){
+    return `<div class="right-now">🧭 <b>Right now ${P.be} probably:</b> ${travel}</div>`;
+  }
   const sched = SCHEDULES[dayNum];
   if (!sched) return "";
   const h = parseInt(new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", hour12:false }).format(new Date()));
@@ -589,6 +656,7 @@ if (typeof ResizeObserver !== "undefined"){
 (function(){
   const handle = document.getElementById("mapResizeHandle");
   const mapEl = document.getElementById("map");
+  const wrapperEl = document.getElementById("mapWrapper");
   if (!handle || !mapEl) return;
   let startX = 0, startY = 0, startWidth = 0, startHeight = 0, dragging = false;
   const MIN_H = 300, MAX_H = Math.round(window.innerHeight * 0.85);
@@ -602,6 +670,9 @@ if (typeof ResizeObserver !== "undefined"){
     const newWidth = Math.max(MIN_W, Math.min(MAX_W, startWidth + (x - startX)));
     mapEl.style.height = newHeight + "px";
     mapEl.style.width = newWidth + "px";
+    // keep the wrapper (which the resize handle is anchored to) the same width as the map
+    // itself, so the handle stays glued to the map's actual corner as it grows and re-centers
+    if (wrapperEl) wrapperEl.style.width = newWidth + "px";
     if (e.cancelable) e.preventDefault();
   }
   function onUp(){
@@ -910,21 +981,6 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   const PORTAL_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49121/message-board";
   const TRACKER_PAGE_URL = "https://portal.true-adventure.co.uk/portal/expeditions/george-abbot-school-2026/49569/tracker";
 
-  const FLIGHTS = [
-    { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
-    { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:null,                          arr:"2026-07-18T16:35:00+07:00" },
-    { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
-    { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
-  ];
-  function flightStatus(f, prevArr){
-    const now = new Date();
-    const arr = new Date(f.arr);
-    const dep = f.dep ? new Date(f.dep) : (prevArr || null);
-    if (now >= arr) return { label:"Landed ✅", cls:"done" };
-    if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
-    if (!f.dep && prevArr && now >= prevArr) return { label:"In transit ✈️", cls:"live" };
-    return { label:"Scheduled", cls:"" };
-  }
   function flightsHTML(){
     let prevArr = null;
     const withStatus = FLIGHTS.map(f=>{
