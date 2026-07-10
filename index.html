@@ -109,7 +109,7 @@
   .info-card h4 { font-family:'Fraunces',serif; font-size:16px; margin:0 0 6px; display:flex; align-items:center; gap:6px; }
   .info-card p, .info-card .placeholder { font-size:15px; line-height:1.6; margin:0 0 8px; color:#3A3F3B; white-space:pre-wrap; }
   .info-card .placeholder { color:#6B6455; font-style:italic; }
-  .info-card textarea, .info-card input[type=url] { width:100%; border-radius:8px; border:1.5px solid #C9BFA6; padding:8px 10px; font-size:15px; font-family:'Inter',sans-serif; resize:vertical; margin-bottom:8px; box-sizing:border-box; }
+  .info-card textarea, .info-card input[type=url], .info-card input[type=text] { width:100%; border-radius:8px; border:1.5px solid #C9BFA6; padding:8px 10px; font-size:15px; font-family:'Inter',sans-serif; resize:vertical; margin-bottom:8px; box-sizing:border-box; }
   .card-btn { background:#1B4332; color:#F6F1E7; border:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; cursor:pointer; min-height:40px; }
   .card-btn.secondary { background:none; color:#1B4332; border:1.5px solid #1B4332; }
   .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
@@ -229,6 +229,14 @@ const PRONOUNS = {
   they: { subj:"they", Subj:"They", obj:"them", poss:"their", Poss:"Their", be:"they're", Be:"They're", will:"they'll", wouldC:"they'd", was:"were" },
 };
 const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
+
+// ---- One switch controls everything below ----
+// false = finalized, read-only version for this specific trip (no edit buttons, no
+//         "Whose trip is this?" card) — this is what's deployed for the Webb family.
+// true  = fully editable version any family can personalize (name/pronouns, tracker link,
+//         emergency contacts, photo link) — flip this to true to hand the exact same file
+//         to another family, rather than maintaining two separate copies that can drift apart.
+const EDITABLE = false;
 const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
 function getLiveTrackerUrl(){
   const saved = localStorage.getItem("live-tracker-url");
@@ -962,8 +970,17 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     </div>`;
   }
 
-  function trackerHTML(){
+  function trackerHTML(editing){
     const liveUrl = getLiveTrackerUrl();
+    if (editing){
+      return `<div class="info-card">
+        <h4>🛰 True Adventure Portal</h4>
+        <p class="placeholder" style="margin-bottom:10px;">Live tracker link:</p>
+        <input type="url" id="trackerInput" aria-label="Live tracker link" placeholder="Paste the live tracker URL here" value="${liveUrl.replace(/"/g,'&quot;')}">
+        <button type="button" class="card-btn" id="saveTracker">Save</button>
+        <button type="button" class="ghost-btn" id="cancelTracker" style="margin-left:8px;">Cancel</button>
+      </div>`;
+    }
     return `<div class="info-card">
       <h4>🛰 True Adventure Portal</h4>
       <p class="placeholder" style="margin-bottom:10px;">Official updates, itinerary and documents all live here — log in with your own saved password (Safari will offer to fill it in).</p>
@@ -972,24 +989,68 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
         <a class="card-btn link portal-btn" href="${TRACKER_PAGE_URL}" target="_blank" rel="noreferrer">Tracker portal page ↗</a>
         <a class="card-btn link portal-btn" style="background:#8A6D3B;" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Message Board ↗</a>
       </div>
-      <p class="placeholder" style="margin:12px 0 0;">If the live tracker ever shows nothing, remember it can take a few hours to update after landing or overnight — that's normal, not a fault.</p>
+      <p class="placeholder" style="margin:12px 0 8px;">If the live tracker ever shows nothing, remember it can take a few hours to update after landing or overnight — that's normal, not a fault.</p>
+      ${EDITABLE ? `<button type="button" class="ghost-btn" id="editTracker">${liveUrl ? "Edit tracker link" : "Add tracker link"}</button>` : ""}
     </div>`;
   }
 
-  function emergencyHTML(){
-    const DEFAULT_CONTACTS = "True Adventure office (general enquiries, and emergencies out-of-hours too): 01730 812742\nsupport@true-adventure.co.uk\n\nPeaksneng project contact (Better Lives): Reynaldo Diez, +855 17 378 344\n\nCardamom trek agency (Asia Adventures - Pagna): pagna@asia-adventures.com, mob +855 92 997 777, operations +855 92 904 206\n\nVietnam agent (Footprint): takes over at the Bavet/Moc Bai border and transfers the team to the airport on 3 Aug";
+  function emergencyHTML(editing){
+    const DEFAULT_CONTACTS = "True Adventure office (general enquiries, and emergencies out-of-hours too): 01730 812742\nsupport@true-adventure.co.uk\n\nPeaksneng project contact (Better Lives): Reynaldo Diez, +855 17 378 344\n\nCardamom trek agency (Asia Adventures - Pagna): pagna@asia-adventures.com, mob +855 92 997 777, operations +855 92 904 206\n\nVietnam agent (Footprint): takes over at the Bavet/Moc Bai border and transfers the team to the airport on 3 Aug\n\nAdd your travel insurance details below once you have them.";
+    const saved = localStorage.getItem("emergency-info");
+    const display = saved!==null ? saved : DEFAULT_CONTACTS;
+    if (editing){
+      return `<div class="info-card">
+        <h4>🆘 Emergency &amp; key contacts</h4>
+        <textarea id="emergencyInput" rows="5" aria-label="Emergency contact details">${display}</textarea>
+        <button type="button" class="card-btn" id="saveEmergency">Save</button>
+      </div>`;
+    }
     return `<div class="info-card">
       <h4>🆘 Emergency &amp; key contacts</h4>
-      <p>${DEFAULT_CONTACTS.replace(/</g,'&lt;')}</p>
+      <p>${display.replace(/</g,'&lt;')}</p>
+      ${EDITABLE ? `<button type="button" class="card-btn secondary" id="editEmergency">Edit</button>` : ""}
     </div>`;
   }
 
-  function photoHTML(){
+  function photoHTML(editing){
     const DEFAULT_INSTAGRAM = "https://www.instagram.com/gacambodia2026/";
+    const saved = localStorage.getItem("photo-album-url");
+    const link = saved !== null ? saved : DEFAULT_INSTAGRAM;
+    if (editing){
+      return `<div class="info-card">
+        <h4>📷 Team photos</h4>
+        <input type="url" id="photoInput" aria-label="Photo album link" placeholder="Paste a photo link here (e.g. Instagram, Google Photos, WhatsApp)" value="${link.replace(/"/g,'&quot;')}">
+        <button type="button" class="card-btn" id="savePhoto">Save</button>
+      </div>`;
+    }
     return `<div class="info-card">
       <h4>📷 Team photos</h4>
       <p class="placeholder" style="margin-bottom:10px;">Run by the school (not True Adventure) — daily posts aren't guaranteed, especially with patchy signal. Request access, then wait to be approved — it's one-way, so please don't reply on it.</p>
-      <a class="card-btn link" href="${DEFAULT_INSTAGRAM}" target="_blank" rel="noreferrer">Open @gacambodia2026 ↗</a>
+      <a class="card-btn link" href="${link}" target="_blank" rel="noreferrer">Open @gacambodia2026 ↗</a>
+      ${EDITABLE ? `<button type="button" class="ghost-btn" style="margin-left:8px;" id="editPhoto">Edit link</button>` : ""}
+    </div>`;
+  }
+
+  function personHTML(editing){
+    if (editing){
+      return `<div class="info-card">
+        <h4>⚙️ Whose trip is this?</h4>
+        <p class="placeholder" style="margin-bottom:10px;">This app is built for the George Abbot T2 2026 itinerary — any family on the same trip can use their own copy of this file and personalize it here.</p>
+        <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">Name</label>
+        <input type="text" id="personNameInput" aria-label="Traveler's name" value="${NAME_SAFE}" maxlength="40">
+        <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">Pronouns</label>
+        <select id="personPronounInput" aria-label="Traveler's pronouns" style="width:100%;border-radius:8px;border:1.5px solid #C9BFA6;padding:8px 10px;font-size:15px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+          <option value="he" ${PRONOUN_KEY==="he"?"selected":""}>He / him</option>
+          <option value="she" ${PRONOUN_KEY==="she"?"selected":""}>She / her</option>
+          <option value="they" ${PRONOUN_KEY==="they"?"selected":""}>They / them</option>
+        </select>
+        <button type="button" class="card-btn" id="savePerson">Save &amp; reload</button>
+      </div>`;
+    }
+    return `<div class="info-card">
+      <h4>⚙️ Whose trip is this?</h4>
+      <p>Currently set up for <b>${NAME_SAFE}</b> (${escapeHtml(P.subj)}/${escapeHtml(P.obj)}).</p>
+      <button type="button" class="card-btn secondary" id="editPerson">Change name / pronouns</button>
     </div>`;
   }
 
@@ -1001,7 +1062,46 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function render(){
-    el.innerHTML = beforeYouGoHTML() + flightsHTML() + trackerHTML() + emergencyHTML() + photoHTML() + aboutDesignHTML();
+    el.innerHTML = (EDITABLE ? personHTML(false) : "") + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML();
+    if (EDITABLE) bindTopLevel();
+  }
+  function bindTopLevel(){
+    const editPe = document.getElementById("editPerson");
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
+    const editTr = document.getElementById("editTracker");
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
+    const editEm = document.getElementById("editEmergency");
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(true) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
+    const editPh = document.getElementById("editPhoto");
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(true) + aboutDesignHTML(); bindEditing(); });
+  }
+  function bindEditing(){
+    const savePe = document.getElementById("savePerson");
+    if (savePe) savePe.addEventListener("click", ()=>{
+      const newName = document.getElementById("personNameInput").value.trim() || "Marcus";
+      const newPronoun = document.getElementById("personPronounInput").value;
+      localStorage.setItem("traveler-name", newName);
+      localStorage.setItem("traveler-pronoun", newPronoun);
+      location.reload();
+    });
+    const saveTr = document.getElementById("saveTracker");
+    if (saveTr) saveTr.addEventListener("click", ()=>{
+      localStorage.setItem("live-tracker-url", document.getElementById("trackerInput").value.trim());
+      render();
+    });
+    const cancelTr = document.getElementById("cancelTracker");
+    if (cancelTr) cancelTr.addEventListener("click", render);
+    const saveEm = document.getElementById("saveEmergency");
+    if (saveEm) saveEm.addEventListener("click", ()=>{
+      localStorage.setItem("emergency-info", document.getElementById("emergencyInput").value.trim());
+      render();
+    });
+    const savePh = document.getElementById("savePhoto");
+    if (savePh) savePh.addEventListener("click", ()=>{
+      localStorage.setItem("photo-album-url", document.getElementById("photoInput").value.trim());
+      render();
+    });
+    bindTopLevel();
   }
   render();
 })();
