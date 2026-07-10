@@ -31,8 +31,8 @@
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
   h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
-  #mapWrapper { position:relative; margin-left:auto; margin-right:auto; }
-  #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; margin-left:auto; margin-right:auto; display:block; }
+  #mapWrapper { position:relative; }
+  #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; position:relative; left:50%; transform:translateX(-50%); }
   .map-resize-handle { display:none; position:absolute; right:6px; bottom:6px; width:30px; height:30px; border-radius:8px; background:rgba(27,67,50,0.85); color:#fff; align-items:center; justify-content:center; font-size:16px; cursor:nwse-resize; z-index:500; user-select:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
   @media (pointer: fine) { .map-resize-handle { display:flex; } }
   .map-resize-handle:hover { background:#1B4332; }
@@ -650,17 +650,30 @@ if (typeof ResizeObserver !== "undefined"){
   }).observe(mapEl);
 }
 
-// custom drag-to-resize handle (desktop only) — a visible grip in the corner, since the native
-// CSS `resize` handle turned out to be invisible once rounded corners + overflow:hidden clipped
-// away the tiny grip browsers normally draw
+// custom drag-to-resize handle (desktop only) — a visible grip glued to the map's actual
+// corner. Since #map centers itself with left:50%+transform (the only way to center a box
+// that can be wider than its container — margin:auto gets clamped to zero by browsers in
+// that case, which was the original bug), the handle's position is computed from the map's
+// real rendered position each time, rather than assumed from a fixed offset.
 (function(){
   const handle = document.getElementById("mapResizeHandle");
   const mapEl = document.getElementById("map");
   const wrapperEl = document.getElementById("mapWrapper");
-  if (!handle || !mapEl) return;
+  if (!handle || !mapEl || !wrapperEl) return;
   let startX = 0, startY = 0, startWidth = 0, startHeight = 0, dragging = false;
   const MIN_H = 300, MAX_H = Math.round(window.innerHeight * 0.85);
   const MIN_W = 300, MAX_W = Math.round(window.innerWidth * 0.95);
+  const HANDLE_SIZE = 30;
+
+  function positionHandle(){
+    const mapRect = mapEl.getBoundingClientRect();
+    const wrapRect = wrapperEl.getBoundingClientRect();
+    handle.style.left = Math.round(mapRect.right - wrapRect.left - HANDLE_SIZE - 6) + "px";
+    handle.style.top = Math.round(mapRect.bottom - wrapRect.top - HANDLE_SIZE - 6) + "px";
+    handle.style.right = "auto";
+    handle.style.bottom = "auto";
+  }
+  window.__positionMapResizeHandle = positionHandle; // exposed so tab-switch code can re-call it
 
   function onMove(e){
     if (!dragging) return;
@@ -670,9 +683,7 @@ if (typeof ResizeObserver !== "undefined"){
     const newWidth = Math.max(MIN_W, Math.min(MAX_W, startWidth + (x - startX)));
     mapEl.style.height = newHeight + "px";
     mapEl.style.width = newWidth + "px";
-    // keep the wrapper (which the resize handle is anchored to) the same width as the map
-    // itself, so the handle stays glued to the map's actual corner as it grows and re-centers
-    if (wrapperEl) wrapperEl.style.width = newWidth + "px";
+    positionHandle();
     if (e.cancelable) e.preventDefault();
   }
   function onUp(){
@@ -680,6 +691,7 @@ if (typeof ResizeObserver !== "undefined"){
     dragging = false;
     document.body.style.userSelect = "";
     try { map.invalidateSize(); } catch(e){}
+    positionHandle();
   }
   function onDown(e){
     dragging = true;
@@ -697,6 +709,7 @@ if (typeof ResizeObserver !== "undefined"){
   window.addEventListener("touchmove", onMove, { passive:false });
   window.addEventListener("mouseup", onUp);
   window.addEventListener("touchend", onUp);
+  setTimeout(positionHandle, 100);
 })();
 
 const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -1184,6 +1197,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       setTimeout(()=>{
         map.invalidateSize();
         map.fitBounds(routeBounds);
+        if (typeof window.__positionMapResizeHandle === "function") window.__positionMapResizeHandle();
       }, 50);
     }
     if (!skipSave){
