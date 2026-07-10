@@ -993,13 +993,6 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     </div>`;
   }
 
-  function personHTML(){
-    return `<div class="info-card">
-      <h4>⚙️ Whose trip is this?</h4>
-      <p>Set up for <b>${NAME_SAFE}</b> (${escapeHtml(P.subj)}/${escapeHtml(P.obj)}).</p>
-    </div>`;
-  }
-
   function aboutDesignHTML(){
     return `<div class="info-card">
       <h4>🎨 Why these colours?</h4>
@@ -1008,7 +1001,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function render(){
-    el.innerHTML = personHTML() + beforeYouGoHTML() + flightsHTML() + trackerHTML() + emergencyHTML() + photoHTML() + aboutDesignHTML();
+    el.innerHTML = beforeYouGoHTML() + flightsHTML() + trackerHTML() + emergencyHTML() + photoHTML() + aboutDesignHTML();
   }
   render();
 })();
