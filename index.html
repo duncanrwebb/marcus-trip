@@ -24,10 +24,14 @@
   .progress-fill { height:100%; background:#C9A66B; border-radius:8px; transition:width .4s ease; }
   main { padding:22px 16px 0; max-width:640px; margin:0 auto; }
 
-  .tabbar { position:sticky; top:0; z-index:20; display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:#F6F1E7; border-bottom:1.5px solid #E4DCC8; padding:10px 12px; scrollbar-width:none; }
+  .tabbar-wrap { position:sticky; top:0; z-index:20; }
+  .tabbar { position:relative; display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:#F6F1E7; border-bottom:1.5px solid #E4DCC8; padding:10px 12px; scrollbar-width:none; }
   .tabbar::-webkit-scrollbar { display:none; }
   .tab-btn { flex-shrink:0; background:#fff; border:1.5px solid #C9BFA6; border-radius:20px; padding:9px 16px; font-size:14px; font-weight:600; color:#3A3F3B; cursor:pointer; min-height:44px; font-family:'Inter',sans-serif; white-space:nowrap; }
   .tab-btn[aria-selected="true"] { background:#1B4332; border-color:#1B4332; color:#F6F1E7; }
+  .tabbar-fade { position:absolute; top:0; bottom:1.5px; width:30px; pointer-events:none; z-index:1; opacity:0; transition:opacity .15s ease; }
+  .tabbar-fade-left { left:0; background:linear-gradient(to right, #F6F1E7, rgba(246,241,231,0)); }
+  .tabbar-fade-right { right:0; background:linear-gradient(to left, #F6F1E7, rgba(246,241,231,0)); }
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
   h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
@@ -133,7 +137,7 @@
   .ghost-btn { background:#fff; border:1.5px solid #C9BFA6; border-radius:10px; padding:9px 14px; font-size:14px; font-weight:600; color:#1B4332; cursor:pointer; min-height:44px; }
 
   @media print {
-    header, .tabbar, #infoCards, #map, .map-controls, #trekProgress, h3.section, #timeline, .note-input-row, #promptChip, .notes-actions, footer { display:none !important; }
+    header, .tabbar-wrap, #infoCards, #map, .map-controls, #trekProgress, h3.section, #timeline, .note-input-row, #promptChip, .notes-actions, footer { display:none !important; }
     .tab-panel { display:none !important; }
     .tab-panel[data-tab="messages"] { display:block !important; }
     .notes-section { border:none; background:none; padding:0; }
@@ -156,6 +160,7 @@
   <div id="currentCard"></div>
 </header>
 
+<div class="tabbar-wrap">
 <nav class="tabbar" id="tabbar" role="tablist" aria-label="App sections">
   <button type="button" class="tab-btn" role="tab" data-tab="info" id="tabbtn-info">ℹ️ Info</button>
   <button type="button" class="tab-btn" role="tab" data-tab="map" id="tabbtn-map">🗺️ Map</button>
@@ -163,6 +168,9 @@
   <button type="button" class="tab-btn" role="tab" data-tab="itinerary" id="tabbtn-itinerary">📅 Itinerary</button>
   <button type="button" class="tab-btn" role="tab" data-tab="messages" id="tabbtn-messages">💬 Messages</button>
 </nav>
+<div class="tabbar-fade tabbar-fade-left" id="tabFadeLeft" aria-hidden="true"></div>
+<div class="tabbar-fade tabbar-fade-right" id="tabFadeRight" aria-hidden="true"></div>
+</div>
 
 <main>
   <section class="tab-panel" data-tab="info" role="tabpanel" aria-labelledby="tabbtn-info">
@@ -1215,6 +1223,22 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
 
   buttons.forEach(b=> b.addEventListener("click", ()=> activate(b.dataset.tab)));
 
+  // scroll-fade hint: the tab bar scrolls horizontally on narrow screens (5 tabs don't all fit),
+  // so show a soft fade on whichever edge has more tabs hidden, updating live as the user scrolls
+  const tabbarEl = document.getElementById("tabbar");
+  const fadeLeft = document.getElementById("tabFadeLeft");
+  const fadeRight = document.getElementById("tabFadeRight");
+  function updateTabFades(){
+    if (!tabbarEl || !fadeLeft || !fadeRight) return;
+    const maxScroll = tabbarEl.scrollWidth - tabbarEl.clientWidth;
+    fadeLeft.style.opacity = tabbarEl.scrollLeft > 4 ? "1" : "0";
+    fadeRight.style.opacity = (maxScroll - tabbarEl.scrollLeft) > 4 ? "1" : "0";
+  }
+  if (tabbarEl){
+    tabbarEl.addEventListener("scroll", updateTabFades, { passive:true });
+    window.addEventListener("resize", updateTabFades);
+  }
+
   // default: last-used tab if the trip is already underway or finished (people jump back to where they were),
   // otherwise start on Info before departure since that's what's most useful pre-trip
   let initial = "info";
@@ -1224,6 +1248,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     else if (status !== "before") initial = "map";
   } catch(e){}
   activate(initial, { skipSave:true });
+  updateTabFades();
 
   // expose a small helper other parts of the page can use to jump tabs (e.g. Google Maps links stay external,
   // but a future "view on map" affordance from the itinerary tab could reuse this)
