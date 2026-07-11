@@ -1141,18 +1141,18 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
   }
 
   function render(){
-    el.innerHTML = (EDITABLE ? personHTML(false) : "") + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML();
+    el.innerHTML = (EDITABLE ? personHTML(false) : "") + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(false) + aboutDesignHTML();
     if (EDITABLE) bindTopLevel();
   }
   function bindTopLevel(){
     const editPe = document.getElementById("editPerson");
-    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(false) + aboutDesignHTML(); bindEditing(); });
     const editTr = document.getElementById("editTracker");
-    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + emergencyHTML(false) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + photoHTML(false) + emergencyHTML(false) + aboutDesignHTML(); bindEditing(); });
     const editEm = document.getElementById("editEmergency");
-    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(true) + photoHTML(false) + aboutDesignHTML(); bindEditing(); });
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(true) + aboutDesignHTML(); bindEditing(); });
     const editPh = document.getElementById("editPhoto");
-    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + emergencyHTML(false) + photoHTML(true) + aboutDesignHTML(); bindEditing(); });
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(true) + emergencyHTML(false) + aboutDesignHTML(); bindEditing(); });
   }
   function bindEditing(){
     const savePe = document.getElementById("savePerson");
