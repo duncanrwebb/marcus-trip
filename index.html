@@ -78,6 +78,10 @@
   textarea#noteInput { flex:1; border-radius:10px; border:1.5px solid #E4DCC8; padding:10px; font-size:16px; font-family:'Inter',sans-serif; resize:vertical; }
   button#saveNote { background:#1B4332; color:#F6F1E7; border:none; border-radius:10px; padding:0 20px; font-weight:600; font-size:17px; cursor:pointer; min-height:44px; }
   .note-item { background:#fff; border-radius:10px; padding:8px 12px; border:1px solid #E4DCC8; margin-bottom:8px; }
+  .note-item-row { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .note-text { flex:1; white-space:pre-wrap; }
+  .note-delete { flex-shrink:0; background:none; border:none; color:#8A6D3B; font-size:15px; cursor:pointer; line-height:1; padding:6px 8px; border-radius:6px; min-height:32px; min-width:32px; }
+  .note-delete:hover { background:#F6F1E7; }
   .note-date { font-size:14px; color:#6B6455; margin-top:4px; font-family:'JetBrains Mono',monospace; }
   footer { text-align:center; font-size:15px; color:#6B6455; margin-top:26px; line-height:1.5; }
   .current-card { background:#fff; color:#1F2421; border-radius:18px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.25); }
@@ -144,6 +148,7 @@
     .notes-section { border:none; background:none; padding:0; }
     #printHeading { display:block !important; font-family:'Fraunces',serif; font-size:22px; margin-bottom:14px; }
     .note-item { break-inside:avoid; border:1px solid #ccc; }
+    .note-delete { display:none !important; }
   }
 </style>
 </head>
@@ -173,6 +178,10 @@
     <div id="thereNow" class="there-now"></div>
     <div id="keyDates" class="key-dates"></div>
     <div id="currentCard"></div>
+    <div class="info-card" style="margin-top:14px;">
+      <h4>🎨 Why these colours?</h4>
+      <p class="placeholder">Not just a random theme — dark jungle green nods to the Cardamom rainforest the trek passes through, gold echoes temple stone and gilding like Angkor Wat, cream instead of stark white gives it a field-journal feel rather than a generic app, and a muted red nods to Khmer architecture. Built to feel like <i>this</i> trip, not a template.</p>
+    </div>
   </section>
 
   <section class="tab-panel" data-tab="info" role="tabpanel" aria-labelledby="tabbtn-info">
@@ -960,11 +969,24 @@ function renderNotes(){
   const notes = loadNotes();
   const el = document.getElementById("notesList");
   if (notes.length===0){ el.innerHTML = `<p class="notes-hint">No messages yet — add the first one above.</p>`; return; }
-  el.innerHTML = notes.map(n=>`
+  el.innerHTML = notes.map((n,i)=>`
     <div class="note-item">
-      <div>${n.text.replace(/</g,'&lt;')}</div>
+      <div class="note-item-row">
+        <div class="note-text">${n.text.replace(/</g,'&lt;')}</div>
+        <button type="button" class="note-delete" data-index="${i}" aria-label="Delete this message">✕</button>
+      </div>
       <div class="note-date">${new Date(n.date).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
     </div>`).join("");
+  el.querySelectorAll(".note-delete").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if (!confirm("Delete this message? This can't be undone.")) return;
+      const idx = parseInt(btn.dataset.index, 10);
+      const current = loadNotes();
+      current.splice(idx, 1);
+      localStorage.setItem(NOTES_KEY, JSON.stringify(current));
+      renderNotes();
+    });
+  });
 }
 document.getElementById("saveNote").addEventListener("click", ()=>{
   const input = document.getElementById("noteInput");
@@ -1133,26 +1155,19 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     </div>`;
   }
 
-  function aboutDesignHTML(){
-    return `<div class="info-card">
-      <h4>🎨 Why these colours?</h4>
-      <p class="placeholder">Not just a random theme — dark jungle green nods to the Cardamom rainforest the trek passes through, gold echoes temple stone and gilding like Angkor Wat, cream instead of stark white gives it a field-journal feel rather than a generic app, and a muted red nods to Khmer architecture. Built to feel like <i>this</i> trip, not a template.</p>
-    </div>`;
-  }
-
   function render(){
-    el.innerHTML = (EDITABLE ? personHTML(false) : "") + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(false) + aboutDesignHTML();
+    el.innerHTML = (EDITABLE ? personHTML(false) : "") + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(false);
     if (EDITABLE) bindTopLevel();
   }
   function bindTopLevel(){
     const editPe = document.getElementById("editPerson");
-    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(false) + aboutDesignHTML(); bindEditing(); });
+    if (editPe) editPe.addEventListener("click", ()=>{ el.innerHTML = personHTML(true) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(false); bindEditing(); });
     const editTr = document.getElementById("editTracker");
-    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + photoHTML(false) + emergencyHTML(false) + aboutDesignHTML(); bindEditing(); });
+    if (editTr) editTr.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(true) + photoHTML(false) + emergencyHTML(false); bindEditing(); });
     const editEm = document.getElementById("editEmergency");
-    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(true) + aboutDesignHTML(); bindEditing(); });
+    if (editEm) editEm.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(false) + emergencyHTML(true); bindEditing(); });
     const editPh = document.getElementById("editPhoto");
-    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(true) + emergencyHTML(false) + aboutDesignHTML(); bindEditing(); });
+    if (editPh) editPh.addEventListener("click", ()=>{ el.innerHTML = personHTML(false) + beforeYouGoHTML() + flightsHTML() + trackerHTML(false) + photoHTML(true) + emergencyHTML(false); bindEditing(); });
   }
   function bindEditing(){
     const savePe = document.getElementById("savePerson");
