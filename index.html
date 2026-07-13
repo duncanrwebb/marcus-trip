@@ -101,9 +101,10 @@
   .prompt-chip { display:inline-block; background:#fff; border:1.5px solid #C9BFA6; border-radius:22px; padding:11px 14px; font-size:16px; color:#3A3F3B; cursor:pointer; margin-bottom:8px; min-height:44px; }
   .prompt-chip:hover { border-color:#C9A66B; }
   .key-dates { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-  .key-date { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:7px 12px; font-size:15px; }
+  .key-date { display:flex; align-items:flex-start; gap:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:9px 12px; font-size:15px; }
   .key-date.done { opacity:.45; text-decoration:line-through; }
-  .key-date .kd-when { font-family:'JetBrains Mono',monospace; font-size:14px; color:#C9A66B; white-space:nowrap; }
+  .key-date .kd-when { font-family:'JetBrains Mono',monospace; font-size:13px; color:#C9A66B; flex:0 0 88px; line-height:1.4; padding-top:1px; }
+  .key-date .kd-label { flex:1; line-height:1.4; }
   .right-now { background:#EFF5EF; border-left:4px solid #3F7248; border-radius:8px; padding:8px 12px; font-size:16px; line-height:1.5; margin:8px 0; }
   .trek-progress { background:#FBF8F1; border:1.5px solid #E4DCC8; border-radius:16px; padding:16px 18px; margin-top:22px; }
   .trek-progress h4 { font-family:'Fraunces',serif; font-size:19px; margin:0 0 4px; }
@@ -563,7 +564,7 @@ document.getElementById("progressFill").style.width =
   const el = document.getElementById("keyDates");
   const today = new Date().toISOString().slice(0,10);
   el.innerHTML = `<div class="tn-head" style="font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#C9A66B;">Key moments to expect news</div>` +
-    KEY_DATES.map(k=>`<div class="key-date ${today>k.d?'done':''}"><span class="kd-when">${k.when}</span><span>${k.label}</span></div>`).join('');
+    KEY_DATES.map(k=>`<div class="key-date ${today>k.d?'done':''}"><span class="kd-when">${k.when}</span><span class="kd-label">${k.label}</span></div>`).join('');
 })();
 
 function rightNowLine(dayNum){
