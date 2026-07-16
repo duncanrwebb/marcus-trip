@@ -268,7 +268,7 @@ function getLiveTrackerUrl(){
 // every timestamp below carries its own explicit UTC offset.
 const FLIGHTS = [
   { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
-  { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:null,                          arr:"2026-07-18T16:35:00+07:00" },
+  { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:"2026-07-18T02:20:00+04:00", arr:"2026-07-18T16:35:00+07:00" },
   { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
   { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
 ];
@@ -290,15 +290,19 @@ function flightStatus(f, prevArr){
 // throughout the day.
 function travelStatusText(dayNum){
   const now = new Date();
-  if (dayNum === 1){
-    const dep = new Date(FLIGHTS[0].dep);
-    if (now < dep) return `still in the UK — coach/flight to Gatwick, departs ${dep.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
-    return "in the air ✈️ — EK16 heading to Dubai";
-  }
-  if (dayNum === 2){
-    const arrDubai = new Date(FLIGHTS[0].arr), arrPP = new Date(FLIGHTS[1].arr);
+  if (dayNum === 1 || dayNum === 2){
+    // Days 1 and 2 are one continuous journey (London → Dubai → Phnom Penh) that happens to
+    // straddle the UK-calendar day boundary. Handling them together avoids a day-boundary gap
+    // where Day 1's status would keep saying "heading to Dubai" long after EK16 had actually
+    // landed and the team had moved on to the EK348 leg.
+    const depLondon = new Date(FLIGHTS[0].dep);
+    const arrDubai = new Date(FLIGHTS[0].arr);
+    const depDubai = new Date(FLIGHTS[1].dep);
+    const arrPP = new Date(FLIGHTS[1].arr);
+    if (now < depLondon) return `still in the UK — coach/flight to Gatwick, departs ${depLondon.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
     if (now < arrDubai) return "in the air ✈️ — EK16 heading to Dubai";
-    if (now < arrPP) return "in transit ✈️ — Dubai to Phnom Penh (EK348)";
+    if (now < depDubai) return "landed in Dubai — transiting the airport, boarding EK348 soon";
+    if (now < arrPP) return "in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover";
     return "landed in Phnom Penh — settling in";
   }
   if (dayNum === 18){
@@ -422,7 +426,7 @@ const DAYS = [
   {n:1,date:"2026-07-17",loc:"London → in flight",phase:"travel",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
    summary:"Depart London Gatwick North Terminal 14:30 on EK16, overnight flight toward Dubai."},
   {n:2,date:"2026-07-18",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
-   summary:"Arrive Dubai 00:40, depart EK348, land Phnom Penh (Techo Intl) 16:35. Collected by driver and transferred to hotel."},
+   summary:"Arrive Dubai 00:40, depart EK348 02:20 (a multi-leg service via a Singapore stopover), land Phnom Penh (Techo Intl) 16:35. Collected by driver and transferred to hotel."},
   {n:3,date:"2026-07-19",loc:"Phnom Penh",phase:"culture",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
    summary:"Acclimatising day: the Tuol Sleng Genocide Museum (S21) and the Killing Fields of Choeung Ek."},
   {n:4,date:"2026-07-20",loc:"Phnom Penh → Siem Reap",phase:"culture",photo:"siemreap",map:"siemreap",lat:13.3632533,lng:103.856403,
@@ -1053,6 +1057,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       <h4>✈️ Flights</h4>
       ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
       <p class="placeholder" style="margin-bottom:10px;">Status here is estimated from the published schedule, not live data. Tap "Track live" on any flight for the real position via Flightradar24 — most useful once it's actually in the air.</p>
+      <p class="placeholder" style="margin-bottom:10px;">Note: EK348 (Dubai → Phnom Penh) is a genuine multi-leg service that stops in Singapore under the same flight number — Flightradar24 will show it as two separate tracked segments in one day, which is expected.</p>
       ${rows}
     </div>`;
   }
