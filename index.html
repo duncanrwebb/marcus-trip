@@ -295,6 +295,9 @@ function flightStatus(f, prevArr){
 // free quota is exhausted — nothing here is required for the app to work correctly.
 const AERODATABOX_KEY = "abd5e6fc80msh4c3eb9325986c09p15e012jsn2ccd24e16ff7";
 let __liveFlightFetchStarted = false;
+// Shared cache so the hero "right now" status line can use the same live data as the Flights
+// card, without a second round of API calls — whichever UI renders first triggers the one fetch.
+let __liveDepartureCache = {};
 async function fetchLiveDelay(flightNo, fromIata, toIata, expectedDateUTC){
   try {
     const res = await fetch(`https://aerodatabox.p.rapidapi.com/flights/number/${flightNo}`, {
@@ -319,7 +322,7 @@ async function fetchLiveDelay(flightNo, fromIata, toIata, expectedDateUTC){
     const schedDep = leg.departure?.scheduledTime?.utc, revDep = leg.departure?.revisedTime?.utc;
     const schedArr = leg.arrival?.scheduledTime?.utc, revArr = leg.arrival?.revisedTime?.utc;
     const depDelayMin = (schedDep && revDep) ? Math.round((new Date(revDep) - new Date(schedDep))/60000) : null;
-    return { depDelayMin, revisedArrUTC: revArr || schedArr || null };
+    return { depDelayMin, revisedDepUTC: revDep || schedDep || null, revisedArrUTC: revArr || schedArr || null };
   } catch(e) { return null; }
 }
 async function updateLiveFlightStatus(){
@@ -335,11 +338,12 @@ async function updateLiveFlightStatus(){
     { no:"EK15",  from:"DXB", to:"LGW", flight: FLIGHTS[3] },
   ];
   for (const t of targets){
-    const row = document.querySelector(`.flight-row[data-flight="${t.no}"] .flight-status`);
-    if (!row) continue;
     const expectedDate = new Date(t.flight.dep).toISOString().slice(0,10);
     const live = await fetchLiveDelay(t.no, t.from, t.to, expectedDate);
-    if (!live || live.depDelayMin === null) continue;
+    if (!live) continue;
+    __liveDepartureCache[t.no] = live; // available to travelStatusText() on its next 30s refresh
+    const row = document.querySelector(`.flight-row[data-flight="${t.no}"] .flight-status`);
+    if (!row || live.depDelayMin === null) continue;
     if (live.depDelayMin >= 10){
       const h = Math.floor(live.depDelayMin/60), m = live.depDelayMin%60;
       const delayStr = h>0 ? `${h}h ${m}m` : `${m}m`;
@@ -363,29 +367,34 @@ function travelStatusText(dayNum){
     // happens to straddle the UK-calendar day boundary. Handling them together avoids a
     // day-boundary gap where Day 1's status would keep saying "heading to Dubai" long after
     // EK16 had actually landed and the team had moved on to the EK348 leg.
+    // Live delay data (when available) overrides the static schedule below — a flight that's
+    // running late doesn't actually take off just because the clock reached the scheduled time.
+    const ek16 = __liveDepartureCache["EK16"], ek348 = __liveDepartureCache["EK348"];
+    const liveTag = (ek16 || ek348) ? " (live)" : "";
     const depCoach = new Date(DEPARTURE_MOMENT);
-    const depLondon = new Date(FLIGHTS[0].dep);
-    const arrDubai = new Date(FLIGHTS[0].arr);
-    const depDubai = new Date(FLIGHTS[1].dep);
-    const arrPP = new Date(FLIGHTS[1].arr);
+    const depLondon = ek16?.revisedDepUTC ? new Date(ek16.revisedDepUTC) : new Date(FLIGHTS[0].dep);
+    const arrDubai = ek16?.revisedArrUTC ? new Date(ek16.revisedArrUTC) : new Date(FLIGHTS[0].arr);
+    const depDubai = ek348?.revisedDepUTC ? new Date(ek348.revisedDepUTC) : new Date(FLIGHTS[1].dep);
+    const arrPP = ek348?.revisedArrUTC ? new Date(ek348.revisedArrUTC) : new Date(FLIGHTS[1].arr);
     if (now < depCoach) return `still in the UK — coach to Gatwick, departs ${depCoach.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
-    if (now < depLondon) return `at Gatwick — checking in, boards EK16 to Dubai at ${depLondon.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
-    if (now < arrDubai) return "in the air ✈️ — EK16 heading to Dubai";
-    if (now < depDubai) return "landed in Dubai — transiting the airport, boarding EK348 soon";
-    if (now < arrPP) return "in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover";
-    return "landed in Phnom Penh — settling in";
+    if (now < depLondon) return `at Gatwick — checking in, boards EK16 to Dubai at ${depLondon.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}${liveTag}`;
+    if (now < arrDubai) return `in the air ✈️ — EK16 heading to Dubai${liveTag}`;
+    if (now < depDubai) return `landed in Dubai — transiting the airport, boarding EK348 soon${liveTag}`;
+    if (now < arrPP) return `in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover${liveTag}`;
+    return `landed in Phnom Penh — settling in${liveTag}`;
   }
-  if (dayNum === 18){
-    const dep = new Date(FLIGHTS[2].dep);
+  if (dayNum === 18 || dayNum === 19){
+    const ek393 = __liveDepartureCache["EK393"], ek15 = __liveDepartureCache["EK15"];
+    const liveTag = (ek393 || ek15) ? " (live)" : "";
+    const dep = ek393?.revisedDepUTC ? new Date(ek393.revisedDepUTC) : new Date(FLIGHTS[2].dep);
+    const arrDubai = ek393?.revisedArrUTC ? new Date(ek393.revisedArrUTC) : new Date(FLIGHTS[2].arr);
+    const depDubai = ek15?.revisedDepUTC ? new Date(ek15.revisedDepUTC) : new Date(FLIGHTS[3].dep);
+    const arrHome = ek15?.revisedArrUTC ? new Date(ek15.revisedArrUTC) : new Date(FLIGHTS[3].arr);
     if (now < dep) return "free time in Ho Chi Minh City, then heading to the airport";
-    return "in the air ✈️ — EK393 heading home, via Dubai";
-  }
-  if (dayNum === 19){
-    const arrDubai = new Date(FLIGHTS[2].arr), depDubai = new Date(FLIGHTS[3].dep), arrHome = new Date(FLIGHTS[3].arr);
-    if (now < arrDubai) return "in the air ✈️ — EK393 heading to Dubai";
-    if (now < depDubai) return "transiting Dubai airport, boarding EK15 soon";
-    if (now < arrHome) return "in the air ✈️ — final leg home on EK15";
-    return "HOME! 🎉";
+    if (now < arrDubai) return `in the air ✈️ — EK393 heading to Dubai${liveTag}`;
+    if (now < depDubai) return `transiting Dubai airport, boarding EK15 soon${liveTag}`;
+    if (now < arrHome) return `in the air ✈️ — final leg home on EK15${liveTag}`;
+    return `HOME! 🎉${liveTag}`;
   }
   return null;
 }
@@ -597,6 +606,7 @@ document.getElementById("progressFill").style.width =
   // there" reading doesn't mean much while he's still airborne or on the ground in the UK/Dubai.
   const travelDay = currentDay && [1,2,18,19].includes(currentDay.n);
   const isUKleg = currentDay && (currentDay.n===1 || currentDay.n===19);
+  if (travelDay) setTimeout(updateLiveFlightStatus, 0); // may already be running if the Flights card triggered it first
 
   function renderTime(){
     const t = new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", minute:"2-digit" }).format(new Date());
