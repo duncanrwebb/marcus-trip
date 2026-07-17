@@ -295,7 +295,7 @@ function flightStatus(f, prevArr){
 // free quota is exhausted — nothing here is required for the app to work correctly.
 const AERODATABOX_KEY = "abd5e6fc80msh4c3eb9325986c09p15e012jsn2ccd24e16ff7";
 let __liveFlightFetchStarted = false;
-async function fetchLiveDelay(flightNo, fromIata, toIata){
+async function fetchLiveDelay(flightNo, fromIata, toIata, expectedDateUTC){
   try {
     const res = await fetch(`https://aerodatabox.p.rapidapi.com/flights/number/${flightNo}`, {
       headers: {
@@ -306,7 +306,15 @@ async function fetchLiveDelay(flightNo, fromIata, toIata){
     if (!res.ok) return null;
     const legs = await res.json();
     if (!Array.isArray(legs)) return null;
-    const leg = legs.find(l => l.departure?.airport?.iata === fromIata && l.arrival?.airport?.iata === toIata);
+    // The "nearest day" lookup can return BOTH yesterday's (already-landed) and today's occurrence
+    // of the same route under one flight number — matching on route alone silently picks whichever
+    // comes first in the array, which is often yesterday's completed flight. Matching on the
+    // scheduled UTC date too (taken from our own FLIGHTS entry) avoids showing stale delay data.
+    const leg = legs.find(l =>
+      l.departure?.airport?.iata === fromIata &&
+      l.arrival?.airport?.iata === toIata &&
+      l.departure?.scheduledTime?.utc?.startsWith(expectedDateUTC)
+    );
     if (!leg) return null;
     const schedDep = leg.departure?.scheduledTime?.utc, revDep = leg.departure?.revisedTime?.utc;
     const schedArr = leg.arrival?.scheduledTime?.utc, revArr = leg.arrival?.revisedTime?.utc;
@@ -321,15 +329,16 @@ async function updateLiveFlightStatus(){
   // the Dubai departure delay is the most useful live signal for "will he make the connection",
   // so that's the leg checked rather than also trying to resolve the Singapore→Phnom Penh leg.
   const targets = [
-    { no:"EK16",  from:"LGW", to:"DXB" },
-    { no:"EK348", from:"DXB", to:"SIN" },
-    { no:"EK393", from:"SGN", to:"DXB" },
-    { no:"EK15",  from:"DXB", to:"LGW" },
+    { no:"EK16",  from:"LGW", to:"DXB", flight: FLIGHTS[0] },
+    { no:"EK348", from:"DXB", to:"SIN", flight: FLIGHTS[1] },
+    { no:"EK393", from:"SGN", to:"DXB", flight: FLIGHTS[2] },
+    { no:"EK15",  from:"DXB", to:"LGW", flight: FLIGHTS[3] },
   ];
   for (const t of targets){
     const row = document.querySelector(`.flight-row[data-flight="${t.no}"] .flight-status`);
     if (!row) continue;
-    const live = await fetchLiveDelay(t.no, t.from, t.to);
+    const expectedDate = new Date(t.flight.dep).toISOString().slice(0,10);
+    const live = await fetchLiveDelay(t.no, t.from, t.to, expectedDate);
     if (!live || live.depDelayMin === null) continue;
     if (live.depDelayMin >= 10){
       const h = Math.floor(live.depDelayMin/60), m = live.depDelayMin%60;
