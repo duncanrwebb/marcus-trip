@@ -233,6 +233,11 @@
 /* ---------------- Data ---------------- */
 const TRIP_START = "2026-07-17";
 const TRIP_END = "2026-08-04";
+// The trip genuinely begins when the coach leaves for Gatwick, not at midnight — this is the
+// real "before → during" transition, so the countdown/progress bar don't flip over hours before
+// anyone has actually left. Kept as an explicit UK-time instant since that's where most people
+// using this app are, regardless of the viewing device's own timezone.
+const DEPARTURE_MOMENT = "2026-07-17T10:30:00+01:00";
 
 /* ---------------- Personalization (name & pronouns) ---------------- */
 // Defaults to Marcus/he so this exact file keeps working as-is. Any family can change this
@@ -291,15 +296,17 @@ function flightStatus(f, prevArr){
 function travelStatusText(dayNum){
   const now = new Date();
   if (dayNum === 1 || dayNum === 2){
-    // Days 1 and 2 are one continuous journey (London → Dubai → Phnom Penh) that happens to
-    // straddle the UK-calendar day boundary. Handling them together avoids a day-boundary gap
-    // where Day 1's status would keep saying "heading to Dubai" long after EK16 had actually
-    // landed and the team had moved on to the EK348 leg.
+    // Days 1 and 2 are one continuous journey (coach → Gatwick → Dubai → Phnom Penh) that
+    // happens to straddle the UK-calendar day boundary. Handling them together avoids a
+    // day-boundary gap where Day 1's status would keep saying "heading to Dubai" long after
+    // EK16 had actually landed and the team had moved on to the EK348 leg.
+    const depCoach = new Date(DEPARTURE_MOMENT);
     const depLondon = new Date(FLIGHTS[0].dep);
     const arrDubai = new Date(FLIGHTS[0].arr);
     const depDubai = new Date(FLIGHTS[1].dep);
     const arrPP = new Date(FLIGHTS[1].arr);
-    if (now < depLondon) return `still in the UK — coach/flight to Gatwick, departs ${depLondon.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
+    if (now < depCoach) return `still in the UK — coach to Gatwick, departs ${depCoach.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
+    if (now < depLondon) return `at Gatwick — checking in, boards EK16 to Dubai at ${depLondon.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
     if (now < arrDubai) return "in the air ✈️ — EK16 heading to Dubai";
     if (now < depDubai) return "landed in Dubai — transiting the airport, boarding EK348 soon";
     if (now < arrPP) return "in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover";
@@ -424,7 +431,7 @@ const KEY_DATES = [
 
 const DAYS = [
   {n:1,date:"2026-07-17",loc:"London → in flight",phase:"travel",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
-   summary:"Depart London Gatwick North Terminal 14:30 on EK16, overnight flight toward Dubai."},
+   summary:"Coach to Gatwick departs 10:30, check in for EK16 (North Terminal), 14:30 departure — overnight flight toward Dubai."},
   {n:2,date:"2026-07-18",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
    summary:"Arrive Dubai 00:40, depart EK348 02:20 (a multi-leg service via a Singapore stopover), land Phnom Penh (Techo Intl) 16:35. Collected by driver and transferred to hotel."},
   {n:3,date:"2026-07-19",loc:"Phnom Penh",phase:"culture",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
@@ -466,9 +473,12 @@ const DAYS = [
 /* ---------------- Date logic ---------------- */
 function dayIndexForToday(){
   const today = new Date();
-  const start = new Date(TRIP_START+"T00:00:00");
-  const end = new Date(TRIP_END+"T23:59:59");
-  if (today < start) return -1;
+  // Explicit UK offsets throughout — trip day boundaries are defined in UK time (where most
+  // people using this app are), not whatever timezone the viewing device happens to be set to.
+  const departure = new Date(DEPARTURE_MOMENT);
+  const start = new Date(TRIP_START+"T00:00:00+01:00");
+  const end = new Date(TRIP_END+"T23:59:59+01:00");
+  if (today < departure) return -1;
   if (today > end) return 20;
   return Math.floor((today-start)/86400000)+1;
 }
@@ -487,7 +497,7 @@ document.getElementById("progressFill").style.width =
 /* Countdown boxes */
 (function(){
   const now = new Date();
-  const start = new Date(TRIP_START+"T00:00:00+01:00"); // start of departure day — matches the True Adventure portal's own countdown
+  const start = new Date(DEPARTURE_MOMENT); // coach leaves for Gatwick — the real start of the journey, not midnight
   const home = new Date(TRIP_END+"T12:35:00+01:00");    // EK15 arrival
   function timeTo(d){
     const ms = Math.max(0, d-now);
