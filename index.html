@@ -322,7 +322,7 @@ async function fetchLiveDelay(flightNo, fromIata, toIata, expectedDateUTC){
     const schedDep = leg.departure?.scheduledTime?.utc, revDep = leg.departure?.revisedTime?.utc;
     const schedArr = leg.arrival?.scheduledTime?.utc, revArr = leg.arrival?.revisedTime?.utc;
     const depDelayMin = (schedDep && revDep) ? Math.round((new Date(revDep) - new Date(schedDep))/60000) : null;
-    return { depDelayMin, revisedDepUTC: revDep || schedDep || null, revisedArrUTC: revArr || schedArr || null };
+    return { depDelayMin, status: leg.status || null, revisedDepUTC: revDep || schedDep || null, revisedArrUTC: revArr || schedArr || null };
   } catch(e) { return null; }
 }
 async function updateLiveFlightStatus(){
@@ -360,6 +360,23 @@ async function updateLiveFlightStatus(){
 // the actual flight departure/arrival times, which are unambiguous regardless of timezone.
 // Returns null for days 3-17, where the destination-local-hour approach is genuinely correct
 // throughout the day.
+// Works out whether a leg is still on the ground, in the air, or landed. The flight's own
+// status string (e.g. "GateClosed", "Departed", "Arrived") is the ground truth when we have it —
+// AeroDataBox's revisedTime doesn't reliably update just because a flight is running late on
+// the ground, so comparing the clock to a schedule/revised time alone isn't enough. Falls back
+// to comparing the clock against the schedule when no live status is available.
+function legPhase(live, schedDep, schedArr, now){
+  if (live && live.status){
+    if (["Departed","EnRoute","Diverted"].includes(live.status)) return "air";
+    if (["Arrived","Landed"].includes(live.status)) return "landed";
+    if (["Expected","CheckIn","Boarding","GateClosed","Scheduled","Delayed","Unknown"].includes(live.status)) return "ground";
+  }
+  const dep = live?.revisedDepUTC ? new Date(live.revisedDepUTC) : schedDep;
+  const arr = live?.revisedArrUTC ? new Date(live.revisedArrUTC) : schedArr;
+  if (now < dep) return "ground";
+  if (now < arr) return "air";
+  return "landed";
+}
 function travelStatusText(dayNum){
   const now = new Date();
   if (dayNum === 1 || dayNum === 2){
@@ -367,33 +384,32 @@ function travelStatusText(dayNum){
     // happens to straddle the UK-calendar day boundary. Handling them together avoids a
     // day-boundary gap where Day 1's status would keep saying "heading to Dubai" long after
     // EK16 had actually landed and the team had moved on to the EK348 leg.
-    // Live delay data (when available) overrides the static schedule below — a flight that's
+    // Live status (when available) overrides the static schedule below — a flight that's
     // running late doesn't actually take off just because the clock reached the scheduled time.
     const ek16 = __liveDepartureCache["EK16"], ek348 = __liveDepartureCache["EK348"];
     const liveTag = (ek16 || ek348) ? " (live)" : "";
     const depCoach = new Date(DEPARTURE_MOMENT);
-    const depLondon = ek16?.revisedDepUTC ? new Date(ek16.revisedDepUTC) : new Date(FLIGHTS[0].dep);
-    const arrDubai = ek16?.revisedArrUTC ? new Date(ek16.revisedArrUTC) : new Date(FLIGHTS[0].arr);
-    const depDubai = ek348?.revisedDepUTC ? new Date(ek348.revisedDepUTC) : new Date(FLIGHTS[1].dep);
-    const arrPP = ek348?.revisedArrUTC ? new Date(ek348.revisedArrUTC) : new Date(FLIGHTS[1].arr);
     if (now < depCoach) return `still in the UK — coach to Gatwick, departs ${depCoach.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
-    if (now < depLondon) return `at Gatwick — checking in, boards EK16 to Dubai at ${depLondon.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}${liveTag}`;
-    if (now < arrDubai) return `in the air ✈️ — EK16 heading to Dubai${liveTag}`;
-    if (now < depDubai) return `landed in Dubai — transiting the airport, boarding EK348 soon${liveTag}`;
-    if (now < arrPP) return `in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover${liveTag}`;
+    const ek16Phase = legPhase(ek16, new Date(FLIGHTS[0].dep), new Date(FLIGHTS[0].arr), now);
+    if (ek16Phase === "ground"){
+      const depTime = (ek16?.revisedDepUTC ? new Date(ek16.revisedDepUTC) : new Date(FLIGHTS[0].dep)).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"});
+      return `at Gatwick — boards EK16 to Dubai at ${depTime}${liveTag}`;
+    }
+    if (ek16Phase === "air") return `in the air ✈️ — EK16 heading to Dubai${liveTag}`;
+    const ek348Phase = legPhase(ek348, new Date(FLIGHTS[1].dep), new Date(FLIGHTS[1].arr), now);
+    if (ek348Phase === "ground") return `landed in Dubai — transiting the airport, boarding EK348 soon${liveTag}`;
+    if (ek348Phase === "air") return `in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover${liveTag}`;
     return `landed in Phnom Penh — settling in${liveTag}`;
   }
   if (dayNum === 18 || dayNum === 19){
     const ek393 = __liveDepartureCache["EK393"], ek15 = __liveDepartureCache["EK15"];
     const liveTag = (ek393 || ek15) ? " (live)" : "";
-    const dep = ek393?.revisedDepUTC ? new Date(ek393.revisedDepUTC) : new Date(FLIGHTS[2].dep);
-    const arrDubai = ek393?.revisedArrUTC ? new Date(ek393.revisedArrUTC) : new Date(FLIGHTS[2].arr);
-    const depDubai = ek15?.revisedDepUTC ? new Date(ek15.revisedDepUTC) : new Date(FLIGHTS[3].dep);
-    const arrHome = ek15?.revisedArrUTC ? new Date(ek15.revisedArrUTC) : new Date(FLIGHTS[3].arr);
-    if (now < dep) return "free time in Ho Chi Minh City, then heading to the airport";
-    if (now < arrDubai) return `in the air ✈️ — EK393 heading to Dubai${liveTag}`;
-    if (now < depDubai) return `transiting Dubai airport, boarding EK15 soon${liveTag}`;
-    if (now < arrHome) return `in the air ✈️ — final leg home on EK15${liveTag}`;
+    const ek393Phase = legPhase(ek393, new Date(FLIGHTS[2].dep), new Date(FLIGHTS[2].arr), now);
+    if (ek393Phase === "ground") return "free time in Ho Chi Minh City, then heading to the airport";
+    if (ek393Phase === "air") return `in the air ✈️ — EK393 heading to Dubai${liveTag}`;
+    const ek15Phase = legPhase(ek15, new Date(FLIGHTS[3].dep), new Date(FLIGHTS[3].arr), now);
+    if (ek15Phase === "ground") return `transiting Dubai airport, boarding EK15 soon${liveTag}`;
+    if (ek15Phase === "air") return `in the air ✈️ — final leg home on EK15${liveTag}`;
     return `HOME! 🎉${liveTag}`;
   }
   return null;
