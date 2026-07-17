@@ -287,6 +287,60 @@ function flightStatus(f, prevArr){
   return { label:"Scheduled", cls:"" };
 }
 
+// Live flight-status lookups (AeroDataBox via RapidAPI, free tier) — supplements the schedule
+// above with real delay data where available, refreshed each time the Flights card renders.
+// The key is necessarily visible client-side for a static site; acceptable risk for a private
+// family tracker on an unlisted URL, well within the free-tier quota for this usage pattern.
+// Falls back silently to the schedule-only display above if the call fails, times out, or the
+// free quota is exhausted — nothing here is required for the app to work correctly.
+const AERODATABOX_KEY = "abd5e6fc80msh4c3eb9325986c09p15e012jsn2ccd24e16ff7";
+let __liveFlightFetchStarted = false;
+async function fetchLiveDelay(flightNo, fromIata, toIata){
+  try {
+    const res = await fetch(`https://aerodatabox.p.rapidapi.com/flights/number/${flightNo}`, {
+      headers: {
+        "x-rapidapi-host": "aerodatabox.p.rapidapi.com",
+        "x-rapidapi-key": AERODATABOX_KEY
+      }
+    });
+    if (!res.ok) return null;
+    const legs = await res.json();
+    if (!Array.isArray(legs)) return null;
+    const leg = legs.find(l => l.departure?.airport?.iata === fromIata && l.arrival?.airport?.iata === toIata);
+    if (!leg) return null;
+    const schedDep = leg.departure?.scheduledTime?.utc, revDep = leg.departure?.revisedTime?.utc;
+    const schedArr = leg.arrival?.scheduledTime?.utc, revArr = leg.arrival?.revisedTime?.utc;
+    const depDelayMin = (schedDep && revDep) ? Math.round((new Date(revDep) - new Date(schedDep))/60000) : null;
+    return { depDelayMin, revisedArrUTC: revArr || schedArr || null };
+  } catch(e) { return null; }
+}
+async function updateLiveFlightStatus(){
+  if (__liveFlightFetchStarted) return;
+  __liveFlightFetchStarted = true;
+  // EK348 is a genuine multi-leg service (Dubai → Singapore → Phnom Penh) under one number;
+  // the Dubai departure delay is the most useful live signal for "will he make the connection",
+  // so that's the leg checked rather than also trying to resolve the Singapore→Phnom Penh leg.
+  const targets = [
+    { no:"EK16",  from:"LGW", to:"DXB" },
+    { no:"EK348", from:"DXB", to:"SIN" },
+    { no:"EK393", from:"SGN", to:"DXB" },
+    { no:"EK15",  from:"DXB", to:"LGW" },
+  ];
+  for (const t of targets){
+    const row = document.querySelector(`.flight-row[data-flight="${t.no}"] .flight-status`);
+    if (!row) continue;
+    const live = await fetchLiveDelay(t.no, t.from, t.to);
+    if (!live || live.depDelayMin === null) continue;
+    if (live.depDelayMin >= 10){
+      const h = Math.floor(live.depDelayMin/60), m = live.depDelayMin%60;
+      const delayStr = h>0 ? `${h}h ${m}m` : `${m}m`;
+      row.innerHTML += ` · <b style="color:#A63D40">Delayed ${delayStr}</b> <span style="font-size:12px;color:#6B6455">(live)</span>`;
+    } else {
+      row.innerHTML += ` <span style="font-size:12px;color:#3F7248">(on time · live)</span>`;
+    }
+  }
+}
+
 // Days 1, 2, 18 and 19 are travel days that cross several timezones in a single calendar day
 // (UK → Dubai → Cambodia/Vietnam, or the reverse). A single "what's the local hour there"
 // lookup doesn't make sense for these days — instead, compare the real clock directly against
@@ -1054,7 +1108,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       const depStr = f.dep ? new Date(f.dep).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
       const arrStr = new Date(f.arr).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
       const isLive = st.cls === "live";
-      return `<div class="flight-row ${st.cls}">
+      return `<div class="flight-row ${st.cls}" data-flight="${f.no}">
         <div class="flight-info">
           <div class="flight-main"><b>${f.no}</b> ${f.from} → ${f.to}</div>
           <div class="flight-times">Dep ${depStr} &middot; Arr ${arrStr}</div>
@@ -1063,6 +1117,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
         <a href="https://www.flightradar24.com/data/flights/${f.no.toLowerCase()}" target="_blank" rel="noreferrer" class="card-btn link flight-track-btn ${isLive?'flight-track-btn-live':''}">${isLive?'✈️ Track live now':'Track live'} ↗</a>
       </div>`;
     }).join("");
+    setTimeout(updateLiveFlightStatus, 0);
     return `<div class="info-card">
       <h4>✈️ Flights</h4>
       ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
