@@ -281,7 +281,13 @@ function flightStatus(f, prevArr){
   const now = new Date();
   const arr = new Date(f.arr);
   const dep = f.dep ? new Date(f.dep) : (prevArr || null);
-  if (now >= arr) return { label:"Landed ✅", cls:"done" };
+  // A full day's grace period past the *scheduled* arrival before treating a flight as done —
+  // delays of a few hours are common (EK16 has run 1.5–2.5h late most days this week), and
+  // removing it from the list the moment the original schedule says it should have landed hides
+  // a flight that may well still be in progress. The live status overlay corrects the displayed
+  // text in the meantime; this grace period just keeps the row itself from disappearing early.
+  const arrGrace = new Date(arr.getTime() + 24*60*60*1000);
+  if (now >= arrGrace) return { label:"Landed ✅", cls:"done" };
   if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
   if (!f.dep && prevArr && now >= prevArr) return { label:"In transit ✈️", cls:"live" };
   return { label:"Scheduled", cls:"" };
