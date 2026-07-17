@@ -572,9 +572,15 @@ function dayIndexForToday(){
   const departure = new Date(DEPARTURE_MOMENT);
   const start = new Date(TRIP_START+"T00:00:00+01:00");
   const end = new Date(TRIP_END+"T23:59:59+01:00");
+  // Same contingency as the Flights card: don't declare the trip "over" — and hide the live
+  // tracking — just because the scheduled home-arrival day has ended. A full extra day's grace
+  // covers a badly delayed EK15 without needing to know its actual status. Note the day count must
+  // be explicitly clamped to 19 during the grace window — the raw calendar-day arithmetic below
+  // would otherwise roll past 19 on its own the moment the date changes, regardless of this check.
+  const endGrace = new Date(end.getTime() + 24*60*60*1000);
   if (today < departure) return -1;
-  if (today > end) return 20;
-  return Math.floor((today-start)/86400000)+1;
+  if (today > endGrace) return 20;
+  return Math.min(Math.floor((today-start)/86400000)+1, 19);
 }
 const currentDayNum = dayIndexForToday();
 const status = currentDayNum<1 ? "before" : currentDayNum>19 ? "after" : "during";
