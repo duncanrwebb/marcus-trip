@@ -469,9 +469,9 @@ const MAPS = {
 
 const FACTS = {
   1:`Gatwick is the world's busiest single-runway airport — everything ${NAME_SAFE}'s plane does today happens on one strip of tarmac.`,
-  2:`Cambodia is 6 hours ahead of the UK — when you're having breakfast, ${NAME_SAFE} is finishing ${P.poss} afternoon.`,
-  3:"Phnom Penh sits where three rivers meet, including the Mekong — one of the few rivers on Earth that reverses direction with the seasons.",
-  4:"Angkor Wat is the only building in the world to appear on a national flag — look at Cambodia's flag and you'll see it.",
+  2:"Dubai is 4 hours ahead of the UK and sits at the crossroads of Emirates' global network — nearly half the airline's routes connect through here.",
+  3:"Dubai's Museum of the Future and the Burj Khalifa are both visible from many hotel rooftops across the city — even an unplanned extra day here has a pretty striking skyline.",
+  4:"Phnom Penh sits where three rivers meet, including the Mekong — one of the few rivers on Earth that reverses direction with the seasons.",
   5:"Angkor Wat was built ~900 years ago without cranes or mortar — millions of sandstone blocks floated in on rafts and fitted so tightly no cement was needed.",
   6:`'FAITH garden' is Better Lives' name for the family vegetable plots ${NAME_SAFE} is helping build today — designed to give a family a steady, self-sufficient food supply all year round.`,
   7:"Insect-repellent spray made from local plants is a favourite trick in organic farming here — it protects the vegetables without any chemicals a family can't afford to keep buying.",
@@ -516,7 +516,7 @@ const TREK_TOTAL = 74;
 
 // the moments True Adventure / school are most likely to send an update
 const KEY_DATES = [
-  { d:"2026-07-18", label:"Safe arrival in Phnom Penh", when:"Sat 18 Jul, ~10:35 UK time" },
+  { d:"2026-07-20", label:"Safe arrival in Phnom Penh (after missed connection)", when:"Mon 20 Jul, ~10:40 UK time" },
   { d:"2026-07-27", label:"Team heads into the jungle (least contactable)", when:"Mon 27 Jul" },
   { d:"2026-07-31", label:"Team exits the jungle at Chi Phat", when:"Fri 31 Jul" },
   { d:"2026-08-03", label:"Departure from Ho Chi Minh City", when:"Mon 3 Aug, ~17:50 UK time" },
@@ -526,12 +526,12 @@ const KEY_DATES = [
 const DAYS = [
   {n:1,date:"2026-07-17",loc:"London → in flight",phase:"travel",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
    summary:"Coach to Gatwick departs 10:30, check in for EK16 (North Terminal), 14:30 departure — overnight flight toward Dubai."},
-  {n:2,date:"2026-07-18",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
+  {n:2,date:"2026-07-18",loc:"Dubai (extra night)",phase:"travel",photo:"dubai",map:"dubai",lat:25.2048493,lng:55.2707828,
    summary:"Arrived Dubai 00:40 but missed the EK348 connection — the team are safe and staying at the VOGO Grand Hotel, Dubai until 19 July, then depart 21:00 on EK348 (a multi-leg service via Singapore), landing Phnom Penh 16:40 on 20 July."},
-  {n:3,date:"2026-07-19",loc:"Phnom Penh",phase:"culture",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
-   summary:"Acclimatising day: the Tuol Sleng Genocide Museum (S21) and the Killing Fields of Choeung Ek."},
-  {n:4,date:"2026-07-20",loc:"Phnom Penh → Siem Reap",phase:"culture",photo:"siemreap",map:"siemreap",lat:13.3632533,lng:103.856403,
-   summary:"Travel to Siem Reap. Afternoon exploring Angkor Wat — the largest religious monument in the world, covering 400 acres."},
+  {n:3,date:"2026-07-19",loc:"Dubai (extra night)",phase:"travel",photo:"dubai",map:"dubai",lat:25.2048493,lng:55.2707828,
+   summary:"A second, unplanned day in Dubai while waiting for tonight's rebooked flight — the team are safe at the VOGO Grand Hotel. Departs 21:00 on EK348 via Singapore, arriving Phnom Penh 16:40 tomorrow."},
+  {n:4,date:"2026-07-20",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
+   summary:"Departs Dubai 21:00 the previous night on EK348, via Singapore, arriving Phnom Penh 16:40 — the team's real arrival into Cambodia. The Siem Reap / Angkor Wat leg originally planned for today will need to move; awaiting True Adventure's revised itinerary for the days ahead."},
   {n:5,date:"2026-07-21",loc:"Siem Reap → Peaksneng",phase:"culture",photo:"angkorwat",map:"angkorwat",lat:13.4124693,lng:103.8669857,
    summary:"Sunrise at Angkor Wat, then ~3.5hrs to Peaksneng. Meets Reynaldo Diez from Better Lives for the project briefing and to shop for supplies."},
   {n:6,date:"2026-07-22",loc:"Peaksneng",phase:"project",photo:null,map:null,lat:13.55,lng:104.15,
