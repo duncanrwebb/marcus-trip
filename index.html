@@ -482,7 +482,7 @@ const FACTS = {
   12:"At O'Spot waterfall today, you can actually walk behind the water into a hidden bat cave — Chi Phat became Cambodia's first community-run ecotourism project, turning a former poaching village into one protecting its own forest.",
   13:`The mysterious burial jars and wooden coffins ${NAME_SAFE} passes today are hidden deep in the forest — nobody is certain which people left them there, or exactly how old they are.`,
   14:`Tonight ${NAME_SAFE} sleeps in a hammock under jungle stars near the O'Malu waterfall — with almost no light pollution out here, the Milky Way is properly visible.`,
-  15:`By tonight ${NAME_SAFE} will have trekked 74km in four days — nearly two marathons through jungle in tropical heat — finishing with a celebratory dinner back in the Chi Phat community that first welcomed ${P.obj}.`,
+  15:`By tonight ${NAME_SAFE} will have trekked an estimated ~45km in four days — nearly a marathon and a half through jungle in tropical heat — finishing with a celebratory dinner back in the Chi Phat community that first welcomed ${P.obj}. (Distance is a rough 3/5 estimate after the itinerary was compressed — True Adventure's exact revised trek plan isn't confirmed yet.)`,
   16:"Phnom Penh means 'Penh's Hill' — legend says a widow named Penh found sacred statues in a floating tree and built a temple on the hill.",
   17:`Crossing at Bavet/Moc Bai, ${NAME_SAFE} goes from the Kingdom of Wonder to Vietnam — where Ben Thanh Market in Ho Chi Minh City has stood since 1914 and you can barter for almost anything.`,
   18:"The Cu Chi Tunnels today were built by the Viet Cong — over 250km of underground passages used during the Vietnam War. Some sections tourists can crawl through are still the original wartime size.",
@@ -511,8 +511,12 @@ SCHEDULES[7]=SCHEDULES[6]; SCHEDULES[8]=SCHEDULES[6]; SCHEDULES[9]=SCHEDULES[6];
 SCHEDULES[13]=SCHEDULES[12]; SCHEDULES[14]=SCHEDULES[12];
 
 // trekking km per trip day (from the itinerary: 21, 21, 18, then 14 on the final day)
-const TREK_KM = { 12:21, 13:21, 14:18, 15:14 };
-const TREK_TOTAL = 74;
+// Provisional: the itinerary was compressed by two days after the missed EK348 connection, so the
+// original 74km/4-day trek plan can no longer be right. True Adventure haven't confirmed the actual
+// revised distance yet — these are a rough 3/5 scaling of the original figures as a placeholder,
+// keeping the same four days so the progress bar still has something sane to show. Update once known.
+const TREK_KM = { 12:13, 13:13, 14:11, 15:8 };
+const TREK_TOTAL = 45;
 
 // the moments True Adventure / school are most likely to send an update
 const KEY_DATES = [
@@ -724,9 +728,9 @@ if (currentDay && status==="during"){
     el.innerHTML = `
       <div class="trek-progress">
         <h4>🥾 The Cardamom Trek</h4>
-        <p class="trek-sub">28–31 Jul · 74km over four days through jungle — nearly two marathons. Progress will appear here once he starts.</p>
+        <p class="trek-sub">28–31 Jul (dates TBC) · ~45km over four days through jungle — estimated after the itinerary was compressed; True Adventure's exact revised plan isn't confirmed yet. Progress will appear here once he starts.</p>
         <div class="trek-track"><div class="trek-fill" style="width:0%"></div></div>
-        <div class="trek-stats"><span>0 km</span><span>74 km</span></div>
+        <div class="trek-stats"><span>0 km</span><span>~45 km</span></div>
         ${trackerBtn}
         <p class="trek-note">Guides from the Chi Phat community lead throughout, with an Asia Adventures staff member accompanying the team the whole way. If weather or fitness needs change the route, the school and True Adventure's Operations Room are informed directly — the plan here may not always match in real time.</p>
       </div>`;
