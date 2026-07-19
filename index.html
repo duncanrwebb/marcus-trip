@@ -273,7 +273,7 @@ function getLiveTrackerUrl(){
 // every timestamp below carries its own explicit UTC offset.
 const FLIGHTS = [
   { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
-  { no:"EK348", from:"Dubai",          to:"Phnom Penh",  dep:"2026-07-19T21:01:00+04:00", arr:"2026-07-20T16:40:00+07:00" },
+  { no:"EK314", from:"Dubai",          to:"Phnom Penh",  dep:"2026-07-19T21:01:00+04:00", arr:"2026-07-20T16:40:00+07:00" },
   { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
   { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
 ];
@@ -334,12 +334,12 @@ async function fetchLiveDelay(flightNo, fromIata, toIata, expectedDateUTC){
 async function updateLiveFlightStatus(){
   if (__liveFlightFetchStarted) return;
   __liveFlightFetchStarted = true;
-  // EK348 is a genuine multi-leg service (Dubai → Singapore → Phnom Penh) under one number;
+  // EK314 is a genuine multi-leg service (Dubai → Singapore → Phnom Penh) under one number;
   // the Dubai departure delay is the most useful live signal for "will he make the connection",
   // so that's the leg checked rather than also trying to resolve the Singapore→Phnom Penh leg.
   const targets = [
     { no:"EK16",  from:"LGW", to:"DXB", flight: FLIGHTS[0] },
-    { no:"EK348", from:"DXB", to:"SIN", flight: FLIGHTS[1] },
+    { no:"EK314", from:"DXB", to:"SIN", flight: FLIGHTS[1] },
     { no:"EK393", from:"SGN", to:"DXB", flight: FLIGHTS[2] },
     { no:"EK15",  from:"DXB", to:"LGW", flight: FLIGHTS[3] },
   ];
@@ -385,15 +385,15 @@ function legPhase(live, schedDep, schedArr, now){
 }
 function travelStatusText(dayNum){
   const now = new Date();
-  if (dayNum === 1 || dayNum === 2 || dayNum === 3 || dayNum === 4){ // extended for the missed EK348 connection — real arrival is now Day 4, not Day 2
+  if (dayNum === 1 || dayNum === 2 || dayNum === 3 || dayNum === 4){ // extended for the missed EK314 connection — real arrival is now Day 4, not Day 2
     // Days 1 and 2 are one continuous journey (coach → Gatwick → Dubai → Phnom Penh) that
     // happens to straddle the UK-calendar day boundary. Handling them together avoids a
     // day-boundary gap where Day 1's status would keep saying "heading to Dubai" long after
-    // EK16 had actually landed and the team had moved on to the EK348 leg.
+    // EK16 had actually landed and the team had moved on to the EK314 leg.
     // Live status (when available) overrides the static schedule below — a flight that's
     // running late doesn't actually take off just because the clock reached the scheduled time.
-    const ek16 = __liveDepartureCache["EK16"], ek348 = __liveDepartureCache["EK348"];
-    const liveTag = (ek16 || ek348) ? " (live)" : "";
+    const ek16 = __liveDepartureCache["EK16"], ek314 = __liveDepartureCache["EK314"];
+    const liveTag = (ek16 || ek314) ? " (live)" : "";
     const depCoach = new Date(DEPARTURE_MOMENT);
     if (now < depCoach) return `still in the UK — coach to Gatwick, departs ${depCoach.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"})}`;
     const ek16Phase = legPhase(ek16, new Date(FLIGHTS[0].dep), new Date(FLIGHTS[0].arr), now);
@@ -402,9 +402,9 @@ function travelStatusText(dayNum){
       return `at Gatwick — boards EK16 to Dubai at ${depTime}${liveTag}`;
     }
     if (ek16Phase === "air") return `in the air ✈️ — EK16 heading to Dubai${liveTag}`;
-    const ek348Phase = legPhase(ek348, new Date(FLIGHTS[1].dep), new Date(FLIGHTS[1].arr), now);
-    if (ek348Phase === "ground") return `landed in Dubai — transiting the airport, boarding EK348 soon${liveTag}`;
-    if (ek348Phase === "air") return `in the air ✈️ — EK348 to Phnom Penh, via a Singapore stopover${liveTag}`;
+    const ek314Phase = legPhase(ek314, new Date(FLIGHTS[1].dep), new Date(FLIGHTS[1].arr), now);
+    if (ek314Phase === "ground") return `landed in Dubai — transiting the airport, boarding EK314 soon${liveTag}`;
+    if (ek314Phase === "air") return `in the air ✈️ — EK314 to Phnom Penh, via a Singapore stopover${liveTag}`;
     return `landed in Phnom Penh — settling in${liveTag}`;
   }
   if (dayNum === 18 || dayNum === 19){
@@ -492,7 +492,7 @@ const FACTS = {
 // rough time-of-day schedules (Cambodia local time, UTC+7) used for the "right now he's probably..." line
 const SCHEDULES = {
   1:[[0,"getting ready and packing final bits"],[11,"at Gatwick with the team"],[14,"in the air — EK16 to Dubai"]],
-  2:[[0,"transiting through Dubai airport"],[3,"in the air — EK348 to Phnom Penh"],[17,"landed! Meeting the driver, transferring to the hotel"],[20,"settling into the hotel after two days of travel"]],
+  2:[[0,"transiting through Dubai airport"],[3,"in the air — EK314 to Phnom Penh"],[17,"landed! Meeting the driver, transferring to the hotel"],[20,"settling into the hotel after two days of travel"]],
   3:[[0,"asleep at the hotel"],[7,"having breakfast at the hotel"],[9,"visiting Tuol Sleng (S21) and the Killing Fields"],[17,"back at the hotel, decompressing after a heavy but important day"],[22,"asleep"]],
   4:[[0,"asleep"],[7,"having breakfast, then boarding transport to Siem Reap"],[9,"on the road to Siem Reap (~3.5hrs)"],[14,"exploring the Angkor Wat complex"],[18,"evening at the hostel in Siem Reap"],[22,"asleep"]],
   5:[[0,"asleep"],[5,"possibly up for sunrise at Angkor Wat"],[9,"travelling to Peaksneng"],[14,"meeting Rey from Better Lives, project briefing and buying supplies"],[19,"first evening in the village"],[22,"asleep"]],
@@ -511,7 +511,7 @@ SCHEDULES[7]=SCHEDULES[6]; SCHEDULES[8]=SCHEDULES[6]; SCHEDULES[9]=SCHEDULES[6];
 SCHEDULES[13]=SCHEDULES[12]; SCHEDULES[14]=SCHEDULES[12];
 
 // trekking km per trip day (from the itinerary: 21, 21, 18, then 14 on the final day)
-// Provisional: the itinerary was compressed by two days after the missed EK348 connection, so the
+// Provisional: the itinerary was compressed by two days after the missed EK314 connection, so the
 // original 74km/4-day trek plan can no longer be right. True Adventure haven't confirmed the actual
 // revised distance yet — these are a rough 3/5 scaling of the original figures as a placeholder,
 // keeping the same four days so the progress bar still has something sane to show. Update once known.
@@ -531,11 +531,11 @@ const DAYS = [
   {n:1,date:"2026-07-17",loc:"London → in flight",phase:"travel",photo:"gatwick",map:"gatwick",lat:51.1598168,lng:-0.1776161,
    summary:"Coach to Gatwick departs 10:30, check in for EK16 (North Terminal), 14:30 departure — overnight flight toward Dubai."},
   {n:2,date:"2026-07-18",loc:"Dubai (extra night)",phase:"travel",photo:"dubai",map:"dubai",lat:25.2048493,lng:55.2707828,
-   summary:"Arrived Dubai 00:40 but missed the EK348 connection — the team are safe and staying at the VOGO Grand Hotel, Dubai until 19 July, then depart 21:00 on EK348 (a multi-leg service via Singapore), landing Phnom Penh 16:40 on 20 July."},
+   summary:"Arrived Dubai 00:40 but missed the EK314 connection — the team are safe and staying at the VOGO Grand Hotel, Dubai until 19 July, then depart 21:00 on EK314 (a multi-leg service via Singapore), landing Phnom Penh 16:40 on 20 July."},
   {n:3,date:"2026-07-19",loc:"Dubai (extra night)",phase:"travel",photo:"dubai",map:"dubai",lat:25.2048493,lng:55.2707828,
-   summary:"A second, unplanned day in Dubai while waiting for tonight's rebooked flight — the team are safe at the VOGO Grand Hotel. Departs 21:01 on EK348 via Singapore, arriving Phnom Penh 16:40 tomorrow."},
+   summary:"A second, unplanned day in Dubai while waiting for tonight's rebooked flight — the team are safe at the VOGO Grand Hotel. Departs 21:01 on EK314 via Singapore, arriving Phnom Penh 16:40 tomorrow."},
   {n:4,date:"2026-07-20",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
-   summary:"Departs Dubai 21:01 the previous night on EK348, via Singapore, arriving Phnom Penh 16:40 — the team's real arrival into Cambodia after the Dubai delay. True Adventure's revised itinerary compresses the schedule after this so the 4 August return date stays unchanged."},
+   summary:"Departs Dubai 21:01 the previous night on EK314, via Singapore, arriving Phnom Penh 16:40 — the team's real arrival into Cambodia after the Dubai delay. True Adventure's revised itinerary compresses the schedule after this so the 4 August return date stays unchanged."},
   {n:5,date:"2026-07-21",loc:"Phnom Penh",phase:"culture",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
    summary:"A full day of sightseeing in Phnom Penh — the Royal Palace, Silver Pagoda, and Riverside markets. A chance to settle in and explore Cambodia's capital before heading north."},
   {n:6,date:"2026-07-22",loc:"Phnom Penh → Siem Reap",phase:"travel",photo:"angkorwat",map:"angkorwat",lat:13.4124693,lng:103.8669857,
@@ -636,7 +636,7 @@ document.getElementById("progressFill").style.width =
   const lat = currentDay ? currentDay.lat : 11.556, lng = currentDay ? currentDay.lng : 104.928;
   // Travel days genuinely cross timezones within one calendar day — a single "local time
   // there" reading doesn't mean much while he's still airborne or on the ground in the UK/Dubai.
-  const travelDay = currentDay && [1,2,3,4,18,19].includes(currentDay.n); // extended: Team 2 missed the EK348 connection and are now in Dubai through the 19th — see FLIGHTS/DAYS notes
+  const travelDay = currentDay && [1,2,3,4,18,19].includes(currentDay.n); // extended: Team 2 missed the EK314 connection and are now in Dubai through the 19th — see FLIGHTS/DAYS notes
   const isUKleg = currentDay && (currentDay.n===1 || currentDay.n===19);
   if (travelDay) setTimeout(updateLiveFlightStatus, 0); // may already be running if the Flights card triggered it first
 
@@ -1173,7 +1173,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       <h4>✈️ Flights</h4>
       ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
       <p class="placeholder" style="margin-bottom:10px;">Status here is estimated from the published schedule, not live data. Tap "Track live" on any flight for the real position via Flightradar24 — most useful once it's actually in the air.</p>
-      <p class="placeholder" style="margin-bottom:10px;">Note: EK348 (Dubai → Phnom Penh) is a genuine multi-leg service that stops in Singapore under the same flight number — Flightradar24 will show it as two separate tracked segments in one day, which is expected.</p>
+      <p class="placeholder" style="margin-bottom:10px;">Note: EK314 (Dubai → Phnom Penh) is a genuine multi-leg service that stops in Singapore under the same flight number — Flightradar24 will show it as two separate tracked segments in one day, which is expected.</p>
       ${rows}
     </div>`;
   }
