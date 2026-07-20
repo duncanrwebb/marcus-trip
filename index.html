@@ -230,6 +230,22 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+// iOS home-screen PWAs frequently "resume" a suspended page from memory instead of properly
+// reloading it when reopened — so the service worker's network-first fetch never actually
+// runs again, and the app can silently show data from whenever it was last cold-started, even
+// hours or days ago. Force a real reload if the app's been backgrounded for a while, so this is
+// self-healing rather than needing a manual close/reopen or (worse) a full delete+reinstall.
+(function(){
+  let hiddenAt = null;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+    if (document.visibilityState === "visible" && hiddenAt && (Date.now() - hiddenAt > 5*60*1000)) {
+      location.reload();
+    }
+    hiddenAt = null;
+  });
+})();
+
 /* ---------------- Data ---------------- */
 const TRIP_START = "2026-07-17";
 const TRIP_END = "2026-08-04";
