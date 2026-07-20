@@ -317,7 +317,7 @@ function flightStatus(f, prevArr){
 // Falls back silently to the schedule-only display above if the call fails, times out, or the
 // free quota is exhausted — nothing here is required for the app to work correctly.
 const AERODATABOX_KEY = "abd5e6fc80msh4c3eb9325986c09p15e012jsn2ccd24e16ff7";
-let __liveFlightFetchStarted = false;
+let __liveFlightFetchInProgress = false;
 // Shared cache so the hero "right now" status line can use the same live data as the Flights
 // card, without a second round of API calls — whichever UI renders first triggers the one fetch.
 let __liveDepartureCache = {};
@@ -349,32 +349,43 @@ async function fetchLiveDelay(flightNo, fromIata, toIata, expectedDateUTC){
   } catch(e) { return null; }
 }
 async function updateLiveFlightStatus(){
-  if (__liveFlightFetchStarted) return;
-  __liveFlightFetchStarted = true;
-  // The Dubai→Phnom Penh connection turned out to be two genuinely separate flight numbers
-  // with a long Singapore layover between them (EK314, then EK348) — not one multi-leg service
-  // under a single number as first assumed. Both are tracked independently below.
-  const targets = [
-    { no:"EK16",  from:"LGW", to:"DXB", flight: FLIGHTS[0] },
-    { no:"EK314", from:"DXB", to:"SIN", flight: FLIGHTS[1] },
-    { no:"EK348", from:"SIN", to:"PNH", flight: FLIGHTS[2] },
-    { no:"EK393", from:"SGN", to:"DXB", flight: FLIGHTS[3] },
-    { no:"EK15",  from:"DXB", to:"LGW", flight: FLIGHTS[4] },
-  ];
-  for (const t of targets){
-    const expectedDate = new Date(t.flight.dep).toISOString().slice(0,10);
-    const live = await fetchLiveDelay(t.no, t.from, t.to, expectedDate);
-    if (!live) continue;
-    __liveDepartureCache[t.no] = live; // available to travelStatusText() on its next 30s refresh
-    const row = document.querySelector(`.flight-row[data-flight="${t.no}"] .flight-status`);
-    if (!row || live.depDelayMin === null) continue;
-    if (live.depDelayMin >= 10){
-      const h = Math.floor(live.depDelayMin/60), m = live.depDelayMin%60;
-      const delayStr = h>0 ? `${h}h ${m}m` : `${m}m`;
-      row.innerHTML += ` · <b style="color:#A63D40">Delayed ${delayStr}</b> <span style="font-size:12px;color:#6B6455">(live)</span>`;
-    } else {
-      row.innerHTML += ` <span style="font-size:12px;color:#3F7248">(on time · live)</span>`;
+  // Guards against overlapping calls (e.g. the hero and the Flights card both triggering this
+  // around the same time), but — unlike the old one-shot flag — does NOT block future calls,
+  // since a single fetch per page load goes stale if the tab is left open for hours without ever
+  // being backgrounded (the auto-reload-on-resume fix only helps once the tab actually resumes).
+  if (__liveFlightFetchInProgress) return;
+  __liveFlightFetchInProgress = true;
+  try {
+    // The Dubai→Phnom Penh connection turned out to be two genuinely separate flight numbers
+    // with a long Singapore layover between them (EK314, then EK348) — not one multi-leg service
+    // under a single number as first assumed. Both are tracked independently below.
+    const targets = [
+      { no:"EK16",  from:"LGW", to:"DXB", flight: FLIGHTS[0] },
+      { no:"EK314", from:"DXB", to:"SIN", flight: FLIGHTS[1] },
+      { no:"EK348", from:"SIN", to:"PNH", flight: FLIGHTS[2] },
+      { no:"EK393", from:"SGN", to:"DXB", flight: FLIGHTS[3] },
+      { no:"EK15",  from:"DXB", to:"LGW", flight: FLIGHTS[4] },
+    ];
+    for (const t of targets){
+      const expectedDate = new Date(t.flight.dep).toISOString().slice(0,10);
+      const live = await fetchLiveDelay(t.no, t.from, t.to, expectedDate);
+      if (!live) continue;
+      __liveDepartureCache[t.no] = live; // available to travelStatusText() on its next 30s refresh
+      const row = document.querySelector(`.flight-row[data-flight="${t.no}"] .flight-status`);
+      if (!row || live.depDelayMin === null) continue;
+      // Capture the original schedule-based label once, so repeated refreshes replace the live
+      // badge rather than appending another one on top of the last (this now runs periodically).
+      if (!row.dataset.baseLabel) row.dataset.baseLabel = row.innerHTML;
+      if (live.depDelayMin >= 10){
+        const h = Math.floor(live.depDelayMin/60), m = live.depDelayMin%60;
+        const delayStr = h>0 ? `${h}h ${m}m` : `${m}m`;
+        row.innerHTML = `${row.dataset.baseLabel} · <b style="color:#A63D40">Delayed ${delayStr}</b> <span style="font-size:12px;color:#6B6455">(live)</span>`;
+      } else {
+        row.innerHTML = `${row.dataset.baseLabel} <span style="font-size:12px;color:#3F7248">(on time · live)</span>`;
+      }
     }
+  } finally {
+    __liveFlightFetchInProgress = false;
   }
 }
 
@@ -665,7 +676,13 @@ document.getElementById("progressFill").style.width =
   // there" reading doesn't mean much while he's still airborne or on the ground in the UK/Dubai.
   const travelDay = currentDay && [1,2,3,4,18,19].includes(currentDay.n); // extended: Team 2 missed the EK314 connection and are now in Dubai through the 19th — see FLIGHTS/DAYS notes
   const isUKleg = currentDay && (currentDay.n===1 || currentDay.n===19);
-  if (travelDay) setTimeout(updateLiveFlightStatus, 0); // may already be running if the Flights card triggered it first
+  if (travelDay) {
+    // Refresh periodically, not just once per load — a single fetch per page load goes stale if
+    // the family leaves the tab open and actively visible for hours (as happened with EK314
+    // showing "in the air" long after AeroDataBox confirmed it had landed in Singapore).
+    updateLiveFlightStatus();
+    setInterval(updateLiveFlightStatus, 10*60*1000);
+  }
 
   function renderTime(){
     const t = new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", minute:"2-digit" }).format(new Date());
