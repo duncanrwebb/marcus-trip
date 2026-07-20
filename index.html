@@ -289,7 +289,7 @@ function getLiveTrackerUrl(){
 // every timestamp below carries its own explicit UTC offset.
 const FLIGHTS = [
   { no:"EK16",  from:"London Gatwick", to:"Dubai",       dep:"2026-07-17T14:30:00+01:00", arr:"2026-07-18T00:40:00+04:00" },
-  { no:"EK314", from:"Dubai",          to:"Singapore",   dep:"2026-07-19T21:01:00+04:00", arr:"2026-07-20T08:35:00+08:00" },
+  { no:"EK314", from:"Dubai",          to:"Singapore",   dep:"2026-07-19T21:00:00+04:00", arr:"2026-07-20T08:35:00+08:00" },
   { no:"EK348", from:"Singapore",      to:"Phnom Penh",  dep:"2026-07-20T15:40:00+08:00", arr:"2026-07-20T16:40:00+07:00" },
   { no:"EK393", from:"Ho Chi Minh City", to:"Dubai",     dep:"2026-08-03T23:50:00+07:00",   arr:"2026-08-04T04:00:00+04:00" },
   { no:"EK15",  from:"Dubai",          to:"London Gatwick", dep:"2026-08-04T08:00:00+04:00", arr:"2026-08-04T12:35:00+01:00" },
@@ -554,9 +554,9 @@ const DAYS = [
   {n:2,date:"2026-07-18",loc:"Dubai (extra night)",phase:"travel",photo:"dubai",map:"dubai",lat:25.2048493,lng:55.2707828,
    summary:"Arrived Dubai 00:40 but missed the EK314 connection — the team are safe and staying at the VOGO Grand Hotel, Dubai until 19 July, then depart 21:00 on EK314 (a multi-leg service via Singapore), landing Phnom Penh 16:40 on 20 July."},
   {n:3,date:"2026-07-19",loc:"Dubai (extra night)",phase:"travel",photo:"dubai",map:"dubai",lat:25.2048493,lng:55.2707828,
-   summary:"A second, unplanned day in Dubai while waiting for tonight's rebooked flight — the team are safe at the VOGO Grand Hotel. Departs 21:01 on EK314 to Singapore (arriving ~08:35), then a long layover before EK348 to Phnom Penh at 15:40, arriving 16:40 tomorrow."},
+   summary:"A second, unplanned day in Dubai while waiting for tonight's rebooked flight — the team are safe at the VOGO Grand Hotel. Departs 21:00 on EK314 to Singapore (arriving ~08:35), then a long layover before EK348 to Phnom Penh at 15:40, arriving 16:40 tomorrow."},
   {n:4,date:"2026-07-20",loc:"Dubai → Phnom Penh",phase:"travel",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
-   summary:"Departed Dubai 21:01 the previous night on EK314, landing Singapore ~08:35, then a ~7hr layover before EK348 departs 15:40 for the final leg — arriving Phnom Penh 16:40, the team's real arrival into Cambodia after the Dubai delay. True Adventure's revised itinerary compresses the schedule after this so the 4 August return date stays unchanged."},
+   summary:"Departed Dubai 21:00 the previous night on EK314, landing Singapore ~08:35, then a ~7hr layover before EK348 departs 15:40 for the final leg — arriving Phnom Penh 16:40, the team's real arrival into Cambodia after the Dubai delay. True Adventure's revised itinerary compresses the schedule after this so the 4 August return date stays unchanged."},
   {n:5,date:"2026-07-21",loc:"Phnom Penh",phase:"culture",photo:"phnompenh",map:"phnompenh",lat:11.5563738,lng:104.9282099,
    summary:"A full day of sightseeing in Phnom Penh — the Royal Palace, Silver Pagoda, and Riverside markets. A chance to settle in and explore Cambodia's capital before heading north."},
   {n:6,date:"2026-07-22",loc:"Phnom Penh → Siem Reap",phase:"travel",photo:"angkorwat",map:"angkorwat",lat:13.4124693,lng:103.8669857,
@@ -909,7 +909,7 @@ map.whenReady(()=>{
   setActive('street');
 });
 
-const MAP_DAYS = DAYS.filter(d => d.n!==1 && d.n!==2 && d.n!==3 && d.n!==19); // exclude flight-only transit days and the Dubai delay days — keeps the map focused on the Cambodia/Vietnam route now the team has moved on
+const MAP_DAYS = DAYS.filter(d => d.n!==1 && d.n!==19); // exclude flight-only transit days
 const latlngs = MAP_DAYS.map(d=>[d.lat,d.lng]);
 
 // one stop per unique location (collapse consecutive same-location days), in travel order
