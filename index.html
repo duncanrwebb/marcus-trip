@@ -278,7 +278,9 @@ const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
 //         emergency contacts, photo link) — flip this to true to hand the exact same file
 //         to another family, rather than maintaining two separate copies that can drift apart.
 const EDITABLE = false;
-const DEFAULT_LIVE_TRACKER = "https://pro.yb.tl/ta2026_gast2/";
+// cf.yb.tl is the same live GPS data as the pro.yb.tl link, but loads straight into the
+// zoomed map (Google Maps embed) with no login and no "Show Race Viewer" click needed first.
+const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
 function getLiveTrackerUrl(){
   const saved = localStorage.getItem("live-tracker-url");
   return saved !== null ? saved : DEFAULT_LIVE_TRACKER;
