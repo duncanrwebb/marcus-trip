@@ -909,7 +909,7 @@ map.whenReady(()=>{
   setActive('street');
 });
 
-const MAP_DAYS = DAYS.filter(d => d.n!==1 && d.n!==19); // exclude flight-only transit days
+const MAP_DAYS = DAYS.filter(d => d.n!==1 && d.n!==2 && d.n!==3 && d.n!==19); // exclude flight-only transit days and the Dubai delay days — keeps the map focused on the Cambodia/Vietnam route now the team has moved on
 const latlngs = MAP_DAYS.map(d=>[d.lat,d.lng]);
 
 // one stop per unique location (collapse consecutive same-location days), in travel order
