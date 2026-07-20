@@ -5,7 +5,7 @@
 //    This is what makes "push an update to GitHub" actually show up without a hard refresh.
 //  - Everything else (map tiles, fonts, photos, the Leaflet library) is CACHE-FIRST: once seen,
 //    it's reused instantly and works offline, since that content doesn't change.
-const CACHE = "expedition-v2";
+const CACHE = "expedition-v3"; // bumped to force-clear any stale Cache Storage entries from before this fix
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["./", "./index.html"])).catch(()=>{}));
@@ -29,7 +29,13 @@ self.addEventListener("fetch", (e) => {
   const isPageRequest = e.request.mode === "navigate" || url.pathname.endsWith("/") || url.pathname.endsWith("index.html");
   if (isPageRequest) {
     e.respondWith(
-      fetch(e.request)
+      // {cache:"no-store"} is essential here — GitHub Pages sends "cache-control: max-age=600" on
+      // this page, and a plain fetch() honours the browser's own HTTP disk cache (which survives
+      // even a full device reboot on iOS). Without this, "network-first" was only true in the
+      // service worker's own logic — the actual request could still be silently satisfied from
+      // Safari's disk cache instead of ever reaching the network, which is why updates sometimes
+      // didn't show up even after force-closing and reopening the app.
+      fetch(e.request, { cache: "no-store" })
         .then((res) => {
           if (res && res.status === 200) {
             const copy = res.clone();
