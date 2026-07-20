@@ -397,7 +397,13 @@ function legPhase(live, schedDep, schedArr, now){
   }
   const dep = live?.revisedDepUTC ? new Date(live.revisedDepUTC) : schedDep;
   const arr = live?.revisedArrUTC ? new Date(live.revisedArrUTC) : schedArr;
-  if (now < dep) return "ground";
+  // Without live confirmation, don't assume a flight has actually departed the instant the clock
+  // reaches the scheduled time — this itinerary's Emirates legs have run 1–2.5h late on multiple
+  // days, and AeroDataBox doesn't always have a same-day match for an irregular rebooking (as with
+  // EK348's Singapore→Phnom Penh leg). A modest buffer avoids flipping to "in the air" while the
+  // flight may well still be sat on the ground; live status (when available) always overrides this.
+  const depWithBuffer = live ? dep : new Date(dep.getTime() + 45*60*1000);
+  if (now < depWithBuffer) return "ground";
   if (now < arr) return "air";
   return "landed";
 }
