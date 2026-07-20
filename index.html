@@ -280,7 +280,8 @@ const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
 const EDITABLE = false;
 // cf.yb.tl is the same live GPS data as the pro.yb.tl link, but loads straight into the
 // zoomed map (Google Maps embed) with no login and no "Show Race Viewer" click needed first.
-const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
+// ?maptype=hybrid pre-selects satellite-with-labels on load, tested directly — no manual click needed.
+const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2?maptype=hybrid";
 function getLiveTrackerUrl(){
   const saved = localStorage.getItem("live-tracker-url");
   return saved !== null ? saved : DEFAULT_LIVE_TRACKER;
