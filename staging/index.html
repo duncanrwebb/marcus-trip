@@ -255,15 +255,22 @@ const TRIP_END = "2026-08-04";
 // using this app are, regardless of the viewing device's own timezone.
 const DEPARTURE_MOMENT = "2026-07-17T10:30:00+01:00";
 
+// Distinct per app so personalization, notes and tab-state in localStorage can't bleed between
+// marcus-trip and expedition-tracker when both are opened on the same device — they're
+// same-origin subpaths on GitHub Pages (duncanrwebb.github.io/marcus-trip vs /expedition-tracker),
+// so localStorage is otherwise shared between them.
+const STORAGE_PREFIX = "marcus-trip-";
+function storageKey(name){ return STORAGE_PREFIX + name; }
+
 /* ---------------- Personalization (name & pronouns) ---------------- */
 // Defaults to Marcus/he so this exact file keeps working as-is. Any family can change this
 // via the "Whose trip is this?" card in the Info tab — no code editing needed.
 function escapeHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-const NAME_STORED = localStorage.getItem("traveler-name");
+const NAME_STORED = localStorage.getItem(storageKey("traveler-name"));
 const NAME = (NAME_STORED || "Marcus").trim() || "Marcus";
 const NAME_SAFE = escapeHtml(NAME);
 const IS_DEFAULT = !NAME_STORED;  // true when nobody has personalised this copy yet
-const PRONOUN_KEY = localStorage.getItem("traveler-pronoun") || "he";
+const PRONOUN_KEY = localStorage.getItem(storageKey("traveler-pronoun")) || "he";
 const PRONOUNS = {
   he:   { subj:"he",   Subj:"He",   obj:"him",  poss:"his",   Poss:"His",   be:"he's",    Be:"He's",    will:"he'll",   wouldC:"he'd",   was:"was" },
   she:  { subj:"she",  Subj:"She",  obj:"her",  poss:"her",   Poss:"Her",   be:"she's",   Be:"She's",   will:"she'll",  wouldC:"she'd",  was:"was" },
@@ -286,7 +293,7 @@ const EDITABLE = false;
 // there's no confirmed way to force a different default map style via this link.
 const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
 function getLiveTrackerUrl(){
-  const saved = localStorage.getItem("live-tracker-url");
+  const saved = localStorage.getItem(storageKey("live-tracker-url"));
   return saved !== null ? saved : DEFAULT_LIVE_TRACKER;
 }
 
@@ -371,7 +378,10 @@ async function updateLiveFlightStatus(){
     const targets = [
       { no:"EK16",  from:"LGW", to:"DXB", flight: FLIGHTS[0] },
       { no:"EK314", from:"DXB", to:"SIN", flight: FLIGHTS[1] },
-      { no:"EK348", from:"SIN", to:"PNH", flight: FLIGHTS[2] },
+      // Phnom Penh's IATA code changed to KTI (Techo International, opened 2025) — Emirates now
+      // lands there, not the old PNH (Pochentong). AeroDataBox reports the airport under its
+      // current code, so matching on "PNH" here silently failed to match this leg at all.
+      { no:"EK348", from:"SIN", to:"KTI", flight: FLIGHTS[2] },
       { no:"EK393", from:"SGN", to:"DXB", flight: FLIGHTS[3] },
       { no:"EK15",  from:"DXB", to:"LGW", flight: FLIGHTS[4] },
     ];
@@ -539,9 +549,9 @@ const FACTS = {
 // rough time-of-day schedules (Cambodia local time, UTC+7) used for the "right now he's probably..." line
 const SCHEDULES = {
   1:[[0,"getting ready and packing final bits"],[11,"at Gatwick with the team"],[14,"in the air — EK16 to Dubai"]],
-  2:[[0,"transiting through Dubai airport"],[3,"in the air — EK314 to Phnom Penh"],[17,"landed! Meeting the driver, transferring to the hotel"],[20,"settling into the hotel after two days of travel"]],
-  3:[[0,"asleep at the hotel"],[7,"having breakfast at the hotel"],[9,"visiting Tuol Sleng (S21) and the Killing Fields"],[17,"back at the hotel, decompressing after a heavy but important day"],[22,"asleep"]],
-  4:[[0,"asleep"],[7,"having breakfast, then boarding transport to Siem Reap"],[9,"on the road to Siem Reap (~3.5hrs)"],[14,"exploring the Angkor Wat complex"],[18,"evening at the hostel in Siem Reap"],[22,"asleep"]],
+  2:[[0,"landed in Dubai 00:40 — but missed the EK314 connection"],[2,"transferred to the VOGO Grand Hotel, Dubai for an unplanned extra night"],[10,"breakfast, resting up after the overnight flight"],[14,"free time in Dubai — an unexpected extra day in the city"],[20,"dinner at the hotel"],[22,"asleep"]],
+  3:[[0,"asleep at the VOGO Grand Hotel, Dubai"],[9,"breakfast — a second unplanned day in Dubai while the rebooked flight is confirmed"],[14,"free time / resting at the hotel"],[18,"checking out, heading to the airport"],[21,"in the air ✈️ — EK314 to Singapore"]],
+  4:[[0,"in the air ✈️ — EK314, overnight to Singapore"],[8,"landed in Singapore — long layover before the next leg"],[12,"still transiting Singapore Changi"],[15,"in the air ✈️ — EK348, final leg to Phnom Penh"],[17,"landed in Phnom Penh — the team's real arrival into Cambodia"],[20,"settling into the hotel"],[22,"asleep"]],
   5:[[0,"asleep at the hotel"],[7,"breakfast, catching up after the Dubai delay"],[9,"visiting the Royal Palace and Silver Pagoda"],[13,"lunch by the riverside"],[15,"exploring the riverside markets"],[19,"free evening in Phnom Penh"],[22,"asleep"]],
   6:[[0,"asleep"],[7,"breakfast, then boarding transport to Siem Reap"],[9,"on the road to Siem Reap (~6hrs)"],[15,"first glimpse of Angkor Wat"],[18,"evening in Siem Reap"],[22,"asleep"]],
   7:[[0,"asleep"],[5,"up for sunrise at Angkor Wat"],[9,"exploring more of the Angkor complex"],[12,"transferring ~3.5hrs east to Peaksneng"],[16,"project briefing, meeting the community"],[19,"first evening in the village"],[22,"asleep"]],
@@ -570,7 +580,7 @@ const TREK_TOTAL = 45;
 // the moments True Adventure / school are most likely to send an update
 const KEY_DATES = [
   { d:"2026-07-20", label:"Safe arrival in Phnom Penh (after missed connection)", when:"Mon 20 Jul, ~10:40 UK time" },
-  { d:"2026-07-28", label:"Team heads into the jungle (least contactable)", when:"Tue 28 Jul" },
+  { d:"2026-07-29", label:"Team heads into the jungle (least contactable)", when:"Wed 29 Jul" },
   { d:"2026-07-31", label:"Team exits the jungle at Chi Phat", when:"Fri 31 Jul" },
   { d:"2026-08-03", label:"Departure from Ho Chi Minh City", when:"Mon 3 Aug, ~17:50 UK time" },
   { d:"2026-08-04", label:"Landing at Gatwick — pickup!", when:"Tue 4 Aug, 12:35" },
@@ -1138,7 +1148,7 @@ const PROMPTS = [
   });
 })();
 
-const NOTES_KEY = "marcus-family-notes";
+const NOTES_KEY = storageKey("family-notes");
 function loadNotes(){ try{ return JSON.parse(localStorage.getItem(NOTES_KEY)||"[]"); }catch(e){ return []; } }
 function renderNotes(){
   const notes = loadNotes();
@@ -1273,7 +1283,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
 
   function emergencyHTML(editing){
     const DEFAULT_CONTACTS = "True Adventure office (general enquiries, and emergencies out-of-hours too): 01730 812742\nsupport@true-adventure.co.uk\n\nPeaksneng project contact (Better Lives): Reynaldo Diez, +855 17 378 344\n\nCardamom trek agency (Asia Adventures - Pagna): pagna@asia-adventures.com, mob +855 92 997 777, operations +855 92 904 206\n\nVietnam agent (Footprint): takes over at the Bavet/Moc Bai border and transfers the team to the airport on 3 Aug\n\nAdd your travel insurance details below once you have them.";
-    const saved = localStorage.getItem("emergency-info");
+    const saved = localStorage.getItem(storageKey("emergency-info"));
     const display = saved!==null ? saved : DEFAULT_CONTACTS;
     if (editing){
       return `<div class="info-card">
@@ -1291,7 +1301,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
 
   function photoHTML(editing){
     const DEFAULT_INSTAGRAM = "https://www.instagram.com/gacambodia2026/";
-    const saved = localStorage.getItem("photo-album-url");
+    const saved = localStorage.getItem(storageKey("photo-album-url"));
     const link = saved !== null ? saved : DEFAULT_INSTAGRAM;
     if (editing){
       return `<div class="info-card">
@@ -1350,25 +1360,25 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     if (savePe) savePe.addEventListener("click", ()=>{
       const newName = document.getElementById("personNameInput").value.trim() || "Marcus";
       const newPronoun = document.getElementById("personPronounInput").value;
-      localStorage.setItem("traveler-name", newName);
-      localStorage.setItem("traveler-pronoun", newPronoun);
+      localStorage.setItem(storageKey("traveler-name"), newName);
+      localStorage.setItem(storageKey("traveler-pronoun"), newPronoun);
       location.reload();
     });
     const saveTr = document.getElementById("saveTracker");
     if (saveTr) saveTr.addEventListener("click", ()=>{
-      localStorage.setItem("live-tracker-url", document.getElementById("trackerInput").value.trim());
+      localStorage.setItem(storageKey("live-tracker-url"), document.getElementById("trackerInput").value.trim());
       render();
     });
     const cancelTr = document.getElementById("cancelTracker");
     if (cancelTr) cancelTr.addEventListener("click", render);
     const saveEm = document.getElementById("saveEmergency");
     if (saveEm) saveEm.addEventListener("click", ()=>{
-      localStorage.setItem("emergency-info", document.getElementById("emergencyInput").value.trim());
+      localStorage.setItem(storageKey("emergency-info"), document.getElementById("emergencyInput").value.trim());
       render();
     });
     const savePh = document.getElementById("savePhoto");
     if (savePh) savePh.addEventListener("click", ()=>{
-      localStorage.setItem("photo-album-url", document.getElementById("photoInput").value.trim());
+      localStorage.setItem(storageKey("photo-album-url"), document.getElementById("photoInput").value.trim());
       render();
     });
     bindTopLevel();
@@ -1378,7 +1388,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
 
 /* ---------------- Tabs ---------------- */
 (function(){
-  const TAB_KEY = "marcus-active-tab";
+  const TAB_KEY = storageKey("active-tab");
   const buttons = [...document.querySelectorAll(".tab-btn")];
   const panels = [...document.querySelectorAll(".tab-panel")];
 
