@@ -791,31 +791,34 @@ if (currentDay && status==="during"){
   const el = document.getElementById("trekProgress");
   const firstTrekDay = 13, lastTrekDay = 15; // trek is confirmed 29-31 Jul (day 12 is the Chi Phat transfer, not trekking)
   const liveUrl = getLiveTrackerUrl();
+  // Fixed to the Cardamom trek's own area (anchored on Chi Phat, the trek's start/end village) —
+  // deliberately NOT tied to today's actual itinerary location, so this card doesn't show wherever
+  // the team happens to be on a non-trek day (e.g. Phnom Penh) under a "Cardamom Trek" heading.
+  // Today's-actual-location context lives on the Info tab instead, next to the same tracker link.
+  const TREK_AREA = { lat: 11.3286123, lng: 103.5240783, label: "Chi Phat" };
   // The tracker's own satellite view has no place labels on some phones (see DEFAULT_LIVE_TRACKER
   // comment — mobile stays satellite-only with no way to force Hybrid via URL). Google Maps at
-  // today's itinerary coordinates gives a labelled, named-place fallback so a bare image of jungle
-  // or a rooftop isn't the only option — it's today's planned area, not ${NAME_SAFE}'s live pin.
-  const mapsUrl = currentDay ? `https://www.google.com/maps/search/?api=1&query=${currentDay.lat},${currentDay.lng}` : null;
+  // the trek's own coordinates gives a labelled, named-place fallback so a bare image of jungle
+  // isn't the only option.
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${TREK_AREA.lat},${TREK_AREA.lng}`;
   const trackerBtn = liveUrl
     ? `<div class="portal-btn-group" style="margin-top:10px;">
         <a class="card-btn link portal-btn" style="background:#3F7248;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a>
-        ${mapsUrl ? `<a class="card-btn link portal-btn" style="background:#fff;color:#1B4332;border:1.5px solid #1B4332;" href="${mapsUrl}" target="_blank" rel="noreferrer">📍 Today's area on Google Maps ↗</a>` : ""}
+        <a class="card-btn link portal-btn" style="background:#fff;color:#1B4332;border:1.5px solid #1B4332;" href="${mapsUrl}" target="_blank" rel="noreferrer">📍 Trek area on Google Maps ↗</a>
       </div>
-      <p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days. If the tracker just shows an unlabelled satellite image on your phone, the Google Maps button shows named villages and rivers for today's area instead.</p>`
+      <p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days. If the tracker just shows an unlabelled satellite image on your phone, the Google Maps button shows the named Chi Phat area instead.</p>`
     : "";
   // Small labelled map (same street tiles as the main Map tab, so no new API key or service) showing
-  // today's area inline — a named-place view without leaving this tab, alongside the Google Maps
-  // button above rather than replacing it.
-  const miniMapHTML = currentDay
-    ? `<div id="trekMiniMap" role="img" aria-label="Map showing ${currentDay.loc}" style="height:140px;border-radius:12px;overflow:hidden;margin-top:12px;border:1.5px solid #E4DCC8;"></div>
-       <p style="font-size:13px;color:#6B6455;margin:6px 0 0;text-align:center;">📍 Today's area: ${currentDay.loc}</p>`
-    : "";
+  // the trek's own area inline — a named-place view without leaving this tab, alongside the Google
+  // Maps button above rather than replacing it.
+  const miniMapHTML = `<div id="trekMiniMap" role="img" aria-label="Map of the Chi Phat / Cardamom trek area" style="height:140px;border-radius:12px;overflow:hidden;margin-top:12px;border:1.5px solid #E4DCC8;"></div>
+    <p style="font-size:13px;color:#6B6455;margin:6px 0 0;text-align:center;">📍 The Cardamom trek area — ${TREK_AREA.label}</p>`;
   function initTrekMiniMap(){
-    if (!currentDay || !document.getElementById("trekMiniMap")) return;
+    if (!document.getElementById("trekMiniMap")) return;
     const miniMap = L.map("trekMiniMap", { zoomControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false, boxZoom:false, keyboard:false, attributionControl:false });
-    miniMap.setView([currentDay.lat, currentDay.lng], 10);
+    miniMap.setView([TREK_AREA.lat, TREK_AREA.lng], 10);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:18 }).addTo(miniMap);
-    L.marker([currentDay.lat, currentDay.lng]).addTo(miniMap);
+    L.marker([TREK_AREA.lat, TREK_AREA.lng]).addTo(miniMap);
     // Same issue the main map has: Leaflet can't measure a display:none container, and the Trek
     // tab-panel is hidden at this point on every load (no tab is marked .active in the raw HTML).
     // Exposed so the Tabs section can re-measure once this panel actually becomes visible.
