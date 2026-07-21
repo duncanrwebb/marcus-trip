@@ -406,6 +406,10 @@ async function updateLiveFlightStatus(){
     }
   } finally {
     __liveFlightFetchInProgress = false;
+    // Records when a live check last ran, regardless of whether it found anything — so the
+    // Flights card can show how fresh the status is instead of leaving that ambiguous.
+    const note = document.getElementById("liveCheckedNote");
+    if (note) note.textContent = `Live status checked ${new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}`;
   }
 }
 
@@ -799,6 +803,20 @@ if (currentDay && status==="during"){
       </div>
       <p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days. If the tracker just shows an unlabelled satellite image on your phone, the Google Maps button shows named villages and rivers for today's area instead.</p>`
     : "";
+  // Small labelled map (same street tiles as the main Map tab, so no new API key or service) showing
+  // today's area inline — a named-place view without leaving this tab, alongside the Google Maps
+  // button above rather than replacing it.
+  const miniMapHTML = currentDay
+    ? `<div id="trekMiniMap" role="img" aria-label="Map showing ${currentDay.loc}" style="height:140px;border-radius:12px;overflow:hidden;margin-top:12px;border:1.5px solid #E4DCC8;"></div>
+       <p style="font-size:13px;color:#6B6455;margin:6px 0 0;text-align:center;">📍 Today's area: ${currentDay.loc}</p>`
+    : "";
+  function initTrekMiniMap(){
+    if (!currentDay || !document.getElementById("trekMiniMap")) return;
+    const miniMap = L.map("trekMiniMap", { zoomControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false, boxZoom:false, keyboard:false, attributionControl:false });
+    miniMap.setView([currentDay.lat, currentDay.lng], 10);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:18 }).addTo(miniMap);
+    L.marker([currentDay.lat, currentDay.lng]).addTo(miniMap);
+  }
   if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
     el.innerHTML = `
       <div class="trek-progress">
@@ -806,9 +824,11 @@ if (currentDay && status==="during"){
         <p class="trek-sub">29–31 Jul · ~45km over three days through jungle (estimated total; exact daily distances aren't confirmed). Progress will appear here once he starts.</p>
         <div class="trek-track"><div class="trek-fill" style="width:0%"></div></div>
         <div class="trek-stats"><span>0 km</span><span>~45 km</span></div>
+        ${miniMapHTML}
         ${trackerBtn}
         <p class="trek-note">Guides from the Chi Phat community lead throughout, with an Asia Adventures staff member accompanying the team the whole way. If weather or fitness needs change the route, the school and True Adventure's Operations Room are informed directly — the plan here may not always match in real time.</p>
       </div>`;
+    initTrekMiniMap();
     return;
   }
   // km completed = sum of full trek days finished + assume today's distance completes by evening (18:00 local)
@@ -834,9 +854,11 @@ if (currentDay && status==="during"){
         <div class="trek-boots" style="left:${Math.max(3,Math.min(97,pct))}%">🥾</div>
       </div>
       <div class="trek-stats"><span>${km} km trekked</span><span>${TREK_TOTAL} km total</span></div>
+      ${miniMapHTML}
       ${trackerBtn}
       <p class="trek-note">Guides from Chi Phat lead throughout, with an Asia Adventures staff member accompanying the whole route — if the plan changes on the ground, True Adventure's Operations Room is informed directly.</p>
     </div>`;
+  initTrekMiniMap();
 })();
 
 /* ---------------- Map ---------------- */
@@ -1247,7 +1269,8 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     return `<div class="info-card">
       <h4>✈️ Flights</h4>
       ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
-      <p class="placeholder" style="margin-bottom:10px;">Tap "Track live" for the real position via Flightradar24.</p>
+      <p class="placeholder" style="margin-bottom:4px;">Tap "Track live" for the real position via Flightradar24.</p>
+      <p id="liveCheckedNote" class="placeholder" style="font-size:12px;margin:0 0 10px;"></p>
       ${rows}
     </div>`;
   }
