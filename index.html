@@ -315,11 +315,12 @@ function flightStatus(f, prevArr){
   // waiting out the grace period below once we genuinely know it's down.
   const live = __liveDepartureCache[f.no];
   if (live && ["Arrived","Landed"].includes(live.status)) return { label:"Landed ✅", cls:"done" };
-  // Without that confirmation, a full day's grace period past the *scheduled* arrival before
-  // treating a flight as done — delays of a few hours are common on this itinerary, and removing
-  // it from the list the moment the original schedule says it should have landed hides a flight
-  // that may well still be in progress.
-  const arrGrace = new Date(arr.getTime() + 24*60*60*1000);
+  // Without that confirmation, a grace period past the *scheduled* arrival before treating a
+  // flight as done — delays of a few hours are common on this itinerary (Emirates legs have run
+  // 1-2.5h late on multiple days), so 6h gives comfortable margin without a short regional hop
+  // like EK348 (~2h Singapore-Phnom Penh) sitting shown as "in the air" for most of a day after
+  // it's actually landed, which a flat 24h grace period did.
+  const arrGrace = new Date(arr.getTime() + 6*60*60*1000);
   if (now >= arrGrace) return { label:"Landed ✅", cls:"done" };
   if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
   if (!f.dep && prevArr && now >= prevArr) return { label:"In transit ✈️", cls:"live" };
