@@ -808,22 +808,6 @@ if (currentDay && status==="during"){
       </div>
       <p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days. If the tracker just shows an unlabelled satellite image on your phone, the Google Maps button shows the named Chi Phat area instead.</p>`
     : "";
-  // Small labelled map (same street tiles as the main Map tab, so no new API key or service) showing
-  // the trek's own area inline — a named-place view without leaving this tab, alongside the Google
-  // Maps button above rather than replacing it.
-  const miniMapHTML = `<div id="trekMiniMap" role="img" aria-label="Map of the Chi Phat / Cardamom trek area" style="height:140px;border-radius:12px;overflow:hidden;margin-top:12px;border:1.5px solid #E4DCC8;"></div>
-    <p style="font-size:13px;color:#6B6455;margin:6px 0 0;text-align:center;">📍 The Cardamom trek area — ${TREK_AREA.label}</p>`;
-  function initTrekMiniMap(){
-    if (!document.getElementById("trekMiniMap")) return;
-    const miniMap = L.map("trekMiniMap", { zoomControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false, boxZoom:false, keyboard:false, attributionControl:false });
-    miniMap.setView([TREK_AREA.lat, TREK_AREA.lng], 10);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:18 }).addTo(miniMap);
-    L.marker([TREK_AREA.lat, TREK_AREA.lng]).addTo(miniMap);
-    // Same issue the main map has: Leaflet can't measure a display:none container, and the Trek
-    // tab-panel is hidden at this point on every load (no tab is marked .active in the raw HTML).
-    // Exposed so the Tabs section can re-measure once this panel actually becomes visible.
-    window.__trekMiniMap = miniMap;
-  }
   if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
     el.innerHTML = `
       <div class="trek-progress">
@@ -831,11 +815,9 @@ if (currentDay && status==="during"){
         <p class="trek-sub">29–31 Jul · ~45km over three days through jungle (estimated total; exact daily distances aren't confirmed). Progress will appear here once he starts.</p>
         <div class="trek-track"><div class="trek-fill" style="width:0%"></div></div>
         <div class="trek-stats"><span>0 km</span><span>~45 km</span></div>
-        ${miniMapHTML}
         ${trackerBtn}
         <p class="trek-note">Guides from the Chi Phat community lead throughout, with an Asia Adventures staff member accompanying the team the whole way. If weather or fitness needs change the route, the school and True Adventure's Operations Room are informed directly — the plan here may not always match in real time.</p>
       </div>`;
-    initTrekMiniMap();
     return;
   }
   // km completed = sum of full trek days finished + assume today's distance completes by evening (18:00 local)
@@ -861,11 +843,9 @@ if (currentDay && status==="during"){
         <div class="trek-boots" style="left:${Math.max(3,Math.min(97,pct))}%">🥾</div>
       </div>
       <div class="trek-stats"><span>${km} km trekked</span><span>${TREK_TOTAL} km total</span></div>
-      ${miniMapHTML}
       ${trackerBtn}
       <p class="trek-note">Guides from Chi Phat lead throughout, with an Asia Adventures staff member accompanying the whole route — if the plan changes on the ground, True Adventure's Operations Room is informed directly.</p>
     </div>`;
-  initTrekMiniMap();
 })();
 
 /* ---------------- Map ---------------- */
@@ -1451,10 +1431,6 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
         map.fitBounds(routeBounds);
         if (typeof window.__positionMapResizeHandle === "function") window.__positionMapResizeHandle();
       }, 50);
-    }
-    if (tab === "trek" && window.__trekMiniMap){
-      // Same display:none measurement problem as the main map above, for the small inline map.
-      setTimeout(()=>{ try { window.__trekMiniMap.invalidateSize(); } catch(e){} }, 50);
     }
     if (!skipSave){
       try { localStorage.setItem(TAB_KEY, tab); } catch(e){}
