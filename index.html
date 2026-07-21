@@ -787,8 +787,17 @@ if (currentDay && status==="during"){
   const el = document.getElementById("trekProgress");
   const firstTrekDay = 13, lastTrekDay = 15; // trek is confirmed 29-31 Jul (day 12 is the Chi Phat transfer, not trekking)
   const liveUrl = getLiveTrackerUrl();
+  // The tracker's own satellite view has no place labels on some phones (see DEFAULT_LIVE_TRACKER
+  // comment — mobile stays satellite-only with no way to force Hybrid via URL). Google Maps at
+  // today's itinerary coordinates gives a labelled, named-place fallback so a bare image of jungle
+  // or a rooftop isn't the only option — it's today's planned area, not ${NAME_SAFE}'s live pin.
+  const mapsUrl = currentDay ? `https://www.google.com/maps/search/?api=1&query=${currentDay.lat},${currentDay.lng}` : null;
   const trackerBtn = liveUrl
-    ? `<a class="card-btn link" style="background:#3F7248;display:inline-block;margin-top:10px;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a><p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days.</p>`
+    ? `<div class="portal-btn-group" style="margin-top:10px;">
+        <a class="card-btn link portal-btn" style="background:#3F7248;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a>
+        ${mapsUrl ? `<a class="card-btn link portal-btn" style="background:#fff;color:#1B4332;border:1.5px solid #1B4332;" href="${mapsUrl}" target="_blank" rel="noreferrer">📍 Today's area on Google Maps ↗</a>` : ""}
+      </div>
+      <p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days. If the tracker just shows an unlabelled satellite image on your phone, the Google Maps button shows named villages and rivers for today's area instead.</p>`
     : "";
   if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
     el.innerHTML = `
@@ -1274,10 +1283,11 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       <p class="placeholder" style="margin-bottom:10px;">Official updates, itinerary and documents all live here — log in with your own saved password (Safari will offer to fill it in).</p>
       <div class="portal-btn-group">
         ${liveUrl ? `<a class="card-btn link portal-btn" style="background:#3F7248;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a>` : ""}
+        ${currentDay ? `<a class="card-btn link portal-btn" style="background:#fff;color:#1B4332;border:1.5px solid #1B4332;" href="https://www.google.com/maps/search/?api=1&query=${currentDay.lat},${currentDay.lng}" target="_blank" rel="noreferrer">📍 Today's area on Google Maps ↗</a>` : ""}
         <a class="card-btn link portal-btn" href="${TRACKER_PAGE_URL}" target="_blank" rel="noreferrer">Tracker portal page ↗</a>
         <a class="card-btn link portal-btn" style="background:#8A6D3B;" href="${PORTAL_URL}" target="_blank" rel="noreferrer">💬 Message Board ↗</a>
       </div>
-      <p class="placeholder" style="margin:12px 0 8px;">If the live tracker ever shows nothing, remember it can take a few hours to update after landing or overnight — that's normal, not a fault.</p>
+      <p class="placeholder" style="margin:12px 0 8px;">If the live tracker ever shows nothing, remember it can take a few hours to update after landing or overnight — that's normal, not a fault. On some phones the tracker only shows plain satellite imagery with no place names — the Google Maps button above shows today's area with labels instead.</p>
       ${EDITABLE ? `<button type="button" class="ghost-btn" id="editTracker">${liveUrl ? "Edit tracker link" : "Add tracker link"}</button>` : ""}
     </div>`;
   }
