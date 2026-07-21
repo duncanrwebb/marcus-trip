@@ -280,8 +280,11 @@ const P = PRONOUNS[PRONOUN_KEY] || PRONOUNS.he;
 const EDITABLE = false;
 // cf.yb.tl is the same live GPS data as the pro.yb.tl link, but loads straight into the
 // zoomed map (Google Maps embed) with no login and no "Show Race Viewer" click needed first.
-// ?maptype=hybrid pre-selects satellite-with-labels on load, tested directly — no manual click needed.
-const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2?maptype=hybrid";
+// Note: a ?maptype=hybrid parameter was tried and looked promising in testing (the map's own
+// control marked "Hybrid" as selected), but real-device testing showed the rendered tiles stay
+// satellite-only regardless — that was a flawed test on our part, not a working feature. Reverted;
+// there's no confirmed way to force a different default map style via this link.
+const DEFAULT_LIVE_TRACKER = "https://cf.yb.tl/ta2026_gast2";
 function getLiveTrackerUrl(){
   const saved = localStorage.getItem("live-tracker-url");
   return saved !== null ? saved : DEFAULT_LIVE_TRACKER;
@@ -301,11 +304,14 @@ function flightStatus(f, prevArr){
   const now = new Date();
   const arr = new Date(f.arr);
   const dep = f.dep ? new Date(f.dep) : (prevArr || null);
-  // A full day's grace period past the *scheduled* arrival before treating a flight as done —
-  // delays of a few hours are common (EK16 has run 1.5–2.5h late most days this week), and
-  // removing it from the list the moment the original schedule says it should have landed hides
-  // a flight that may well still be in progress. The live status overlay corrects the displayed
-  // text in the meantime; this grace period just keeps the row itself from disappearing early.
+  // Live confirmation of an actual landing is authoritative — hide it right away rather than
+  // waiting out the grace period below once we genuinely know it's down.
+  const live = __liveDepartureCache[f.no];
+  if (live && ["Arrived","Landed"].includes(live.status)) return { label:"Landed ✅", cls:"done" };
+  // Without that confirmation, a full day's grace period past the *scheduled* arrival before
+  // treating a flight as done — delays of a few hours are common on this itinerary, and removing
+  // it from the list the moment the original schedule says it should have landed hides a flight
+  // that may well still be in progress.
   const arrGrace = new Date(arr.getTime() + 24*60*60*1000);
   if (now >= arrGrace) return { label:"Landed ✅", cls:"done" };
   if (dep && now >= dep) return { label:"In the air ✈️", cls:"live" };
@@ -536,20 +542,22 @@ const SCHEDULES = {
   2:[[0,"transiting through Dubai airport"],[3,"in the air — EK314 to Phnom Penh"],[17,"landed! Meeting the driver, transferring to the hotel"],[20,"settling into the hotel after two days of travel"]],
   3:[[0,"asleep at the hotel"],[7,"having breakfast at the hotel"],[9,"visiting Tuol Sleng (S21) and the Killing Fields"],[17,"back at the hotel, decompressing after a heavy but important day"],[22,"asleep"]],
   4:[[0,"asleep"],[7,"having breakfast, then boarding transport to Siem Reap"],[9,"on the road to Siem Reap (~3.5hrs)"],[14,"exploring the Angkor Wat complex"],[18,"evening at the hostel in Siem Reap"],[22,"asleep"]],
-  5:[[0,"asleep"],[5,"possibly up for sunrise at Angkor Wat"],[9,"travelling to Peaksneng"],[14,"meeting Rey from Better Lives, project briefing and buying supplies"],[19,"first evening in the village"],[22,"asleep"]],
-  6:[[0,"asleep"],[7,"breakfast, then heading to the project site"],[8,"morning session — garden building with the family and Better Lives team"],[12,"midday break — too hot to work, resting until 2pm"],[14,"afternoon session continues"],[17,"finished for the day — free time or a village cultural activity"],[21,"asleep"]],
-  10:[[0,"asleep"],[7,"saying goodbye to hosts"],[9,"on the ~6hr journey back to Phnom Penh"],[16,"arrived, maybe visiting the Royal Palace"],[19,"at the night markets — Khmer noodles or amok"],[22,"asleep"]],
-  11:[[0,"asleep"],[8,"collected from the hostel, 3-4hr drive to Andoung Tuek"],[12,"boarding the boat up the Preak Piphot River"],[15,"arriving at Chi Phat, meeting the trek guides"],[18,"short evening hike to Chhay Chrey Rapids"],[20,"dinner and trek briefing"],[21,"asleep"]],
-  12:[[0,"asleep"],[6,"breakfast, meeting the trek guides"],[8,"trekking — 21km along old logging trails today"],[11,"at O'Spot waterfall — walking behind it to the bat cave"],[13,"lunch at Tuk Vet waterfall"],[15,"afternoon trekking"],[17,"arriving at O'Ampov campsite"],[20,"asleep — early nights on trek"]],
-  15:[[0,"asleep"],[6,"final trek day begins — 14km"],[9,"hiking to Chhay Khpos waterfall"],[12,"lunch break at the waterfall"],[14,"final stretch back to Chi Phat"],[18,"celebratory community dinner!"],[21,"asleep"]],
+  5:[[0,"asleep at the hotel"],[7,"breakfast, catching up after the Dubai delay"],[9,"visiting the Royal Palace and Silver Pagoda"],[13,"lunch by the riverside"],[15,"exploring the riverside markets"],[19,"free evening in Phnom Penh"],[22,"asleep"]],
+  6:[[0,"asleep"],[7,"breakfast, then boarding transport to Siem Reap"],[9,"on the road to Siem Reap (~6hrs)"],[15,"first glimpse of Angkor Wat"],[18,"evening in Siem Reap"],[22,"asleep"]],
+  7:[[0,"asleep"],[5,"up for sunrise at Angkor Wat"],[9,"exploring more of the Angkor complex"],[12,"transferring ~3.5hrs east to Peaksneng"],[16,"project briefing, meeting the community"],[19,"first evening in the village"],[22,"asleep"]],
+  8:[[0,"asleep"],[7,"breakfast, then heading to the project site"],[8,"morning session — fencing and planting the FAITH garden"],[12,"midday break — too hot to work, resting until 2pm"],[14,"afternoon session continues"],[17,"finished for the day — free time or a village activity"],[21,"asleep"]],
+  9:[[0,"asleep"],[7,"breakfast, then back to the project site"],[8,"morning session — making compost and natural insect-repellent sprays"],[12,"midday break"],[14,"afternoon session continues"],[18,"evening with the community"],[21,"asleep"]],
+  10:[[0,"asleep"],[7,"breakfast, then heading to the project site"],[8,"finishing the family's garden"],[12,"midday break"],[14,"afternoon wrapping up"],[18,"evening with the community — cooking, circus, or music"],[21,"asleep"]],
+  11:[[0,"asleep"],[7,"saying goodbye to the family and community"],[9,"final touches at the project"],[12,"on the ~6hr drive back to Phnom Penh"],[18,"arrived, at the night markets"],[22,"asleep"]],
+  12:[[0,"asleep"],[8,"collected from the hotel, 3-4hr drive to Andoung Tuek"],[12,"boarding the boat up the Preak Piphot River"],[15,"arriving at Chi Phat, meeting the trek guides"],[18,"short evening hike to Chhay Chrey Rapids"],[20,"dinner and trek briefing"],[21,"asleep"]],
+  13:[[0,"asleep"],[6,"breakfast, setting off on Trek Day 1 of 3"],[9,"trekking along old logging trails with wide Cardamom views"],[11,"at the 'hidden' O'Spot waterfall — walking behind it to the bat cave"],[13,"lunch at Tuk Vet waterfall"],[16,"afternoon trekking"],[18,"arriving at camp for the night"],[20,"asleep — early nights on trek"]],
+  14:[[0,"asleep"],[6,"breakfast, setting off on Trek Day 2 of 3"],[10,"hiking to the site of ancient burial jars and wooden coffins"],[13,"lunch by the O'Peam Pika River"],[16,"afternoon trekking on to camp"],[20,"asleep"]],
+  15:[[0,"asleep"],[6,"final trek day begins — Trek Day 3 of 3"],[10,"a last push through the Cardamom foothills"],[14,"looping back toward Chi Phat"],[18,"celebratory community dinner!"],[21,"asleep"]],
   16:[[0,"asleep"],[5,"possibly up for the sunrise hike"],[9,"transfer back to Phnom Penh (~5.5hrs)"],[15,"free afternoon — sightseeing or shopping"],[20,"last night in Cambodia"],[22,"asleep"]],
   17:[[0,"asleep"],[7,"breakfast, then bus toward the border"],[11,"crossing at Bavet/Moc Bai into Vietnam"],[14,"on the road to Ho Chi Minh City"],[17,"exploring the markets"],[19,"final celebratory team meal!"],[23,"asleep"]],
   18:[[0,"asleep"],[7,"sourcing breakfast before the early collection"],[9,"on the way to the Cu Chi Tunnels (2hrs from the city)"],[11,"exploring the Cu Chi Tunnels"],[13,"lunch at the tunnel entrance restaurant"],[15,"back in the city, visiting the War Remnants Museum"],[18,"returning to the hotel to collect luggage"],[20,"Footprint transfers the team to Tan Son Nhat airport"],[23,"boarding EK393 — heading home!"]],
   19:[[0,"in the air to Dubai"],[8,"transiting Dubai, boarding EK15"],[11,"in the air — final leg to Gatwick"],[18,"HOME! 🎉"]],
 };
-// days 7-9 share day 6's village rhythm; days 13-14 share day 12's trek rhythm
-SCHEDULES[7]=SCHEDULES[6]; SCHEDULES[8]=SCHEDULES[6]; SCHEDULES[9]=SCHEDULES[6];
-SCHEDULES[13]=SCHEDULES[12]; SCHEDULES[14]=SCHEDULES[12];
 
 // trekking km per trip day (from the itinerary: 21, 21, 18, then 14 on the final day)
 // Provisional: the itinerary was compressed by two days after the missed EK314 connection, so the
@@ -766,7 +774,7 @@ if (currentDay && status==="during"){
 /* Trek progress - only meaningful from the first trek day onward */
 (function(){
   const el = document.getElementById("trekProgress");
-  const firstTrekDay = 12, lastTrekDay = 15;
+  const firstTrekDay = 13, lastTrekDay = 15; // trek is confirmed 29-31 Jul (day 12 is the Chi Phat transfer, not trekking)
   const liveUrl = getLiveTrackerUrl();
   const trackerBtn = liveUrl
     ? `<a class="card-btn link" style="background:#3F7248;display:inline-block;margin-top:10px;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a><p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} has no phone signal in the jungle, but the satellite tracker still updates — this is the most reliable way to see real progress during trek days.</p>`
@@ -775,7 +783,7 @@ if (currentDay && status==="during"){
     el.innerHTML = `
       <div class="trek-progress">
         <h4>🥾 The Cardamom Trek</h4>
-        <p class="trek-sub">28–31 Jul (dates TBC) · ~45km over four days through jungle — estimated after the itinerary was compressed; True Adventure's exact revised plan isn't confirmed yet. Progress will appear here once he starts.</p>
+        <p class="trek-sub">29–31 Jul · ~45km over three days through jungle (estimated total; exact daily distances aren't confirmed). Progress will appear here once he starts.</p>
         <div class="trek-track"><div class="trek-fill" style="width:0%"></div></div>
         <div class="trek-stats"><span>0 km</span><span>~45 km</span></div>
         ${trackerBtn}
@@ -1219,8 +1227,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     return `<div class="info-card">
       <h4>✈️ Flights</h4>
       ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
-      <p class="placeholder" style="margin-bottom:10px;">Status here is estimated from the published schedule, not live data. Tap "Track live" on any flight for the real position via Flightradar24 — most useful once it's actually in the air.</p>
-      <p class="placeholder" style="margin-bottom:10px;">Note: the Dubai → Phnom Penh connection is two separate flights with a long Singapore layover between them — EK314 to Singapore, then EK348 on to Phnom Penh — not one flight number the whole way, so Flightradar24 (and this card) tracks them individually.</p>
+      <p class="placeholder" style="margin-bottom:10px;">Tap "Track live" for the real position via Flightradar24.</p>
       ${rows}
     </div>`;
   }
