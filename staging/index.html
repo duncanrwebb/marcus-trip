@@ -816,6 +816,10 @@ if (currentDay && status==="during"){
     miniMap.setView([currentDay.lat, currentDay.lng], 10);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:18 }).addTo(miniMap);
     L.marker([currentDay.lat, currentDay.lng]).addTo(miniMap);
+    // Same issue the main map has: Leaflet can't measure a display:none container, and the Trek
+    // tab-panel is hidden at this point on every load (no tab is marked .active in the raw HTML).
+    // Exposed so the Tabs section can re-measure once this panel actually becomes visible.
+    window.__trekMiniMap = miniMap;
   }
   if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
     el.innerHTML = `
@@ -1444,6 +1448,10 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
         map.fitBounds(routeBounds);
         if (typeof window.__positionMapResizeHandle === "function") window.__positionMapResizeHandle();
       }, 50);
+    }
+    if (tab === "trek" && window.__trekMiniMap){
+      // Same display:none measurement problem as the main map above, for the small inline map.
+      setTimeout(()=>{ try { window.__trekMiniMap.invalidateSize(); } catch(e){} }, 50);
     }
     if (!skipSave){
       try { localStorage.setItem(TAB_KEY, tab); } catch(e){}
