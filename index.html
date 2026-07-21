@@ -787,7 +787,7 @@ if (currentDay && status==="during"){
   const firstTrekDay = 13, lastTrekDay = 15; // trek is confirmed 29-31 Jul (day 12 is the Chi Phat transfer, not trekking)
   const liveUrl = getLiveTrackerUrl();
   const trackerBtn = liveUrl
-    ? `<a class="card-btn link" style="background:#3F7248;display:inline-block;margin-top:10px;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a><p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} has no phone signal in the jungle, but the satellite tracker still updates — this is the most reliable way to see real progress during trek days.</p>`
+    ? `<a class="card-btn link" style="background:#3F7248;display:inline-block;margin-top:10px;" href="${liveUrl}" target="_blank" rel="noreferrer">🛰 View Live Tracker ↗</a><p class="trek-note" style="border-top:none;padding-top:0;margin-top:6px;">${NAME_SAFE} isn't carrying a phone on the trek — nobody on the team does — but the satellite tracker still updates, so this is the most reliable way to see real progress during trek days.</p>`
     : "";
   if (status==="before" || (status==="during" && currentDayNum < firstTrekDay)){
     el.innerHTML = `
