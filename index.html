@@ -534,16 +534,23 @@ const FACTS = {
   2:"Dubai is 4 hours ahead of the UK and sits at the crossroads of Emirates' global network — nearly half the airline's routes connect through here.",
   3:"Dubai's Museum of the Future and the Burj Khalifa are both visible from many hotel rooftops across the city — even an unplanned extra day here has a pretty striking skyline.",
   4:"Phnom Penh sits where three rivers meet, including the Mekong — one of the few rivers on Earth that reverses direction with the seasons.",
-  5:"Angkor Wat was built ~900 years ago without cranes or mortar — millions of sandstone blocks floated in on rafts and fitted so tightly no cement was needed.",
-  6:`'FAITH garden' is Better Lives' name for the family vegetable plots ${NAME_SAFE} is helping build today — designed to give a family a steady, self-sufficient food supply all year round.`,
-  7:"Insect-repellent spray made from local plants is a favourite trick in organic farming here — it protects the vegetables without any chemicals a family can't afford to keep buying.",
-  8:"Better Lives partners with the village primary school too — so today might involve teaching or playing games with local kids as much as gardening.",
-  9:"The whole village is officially behind this project — local leaders arranged skilled community members to help, so today is as much a village event as a build day.",
-  10:`Fish amok, Cambodia's national dish, is a coconut fish curry steamed in banana leaves — ${NAME_SAFE} might try it at the night market tonight.`,
-  11:"The Cardamom Mountains sprawl over 4.4 million hectares — the largest rainforest in Southeast Asia. Today's boat ride up the Preak Piphot River often spots monkeys, flying squirrels and all kinds of birds.",
-  12:"At O'Spot waterfall today, you can actually walk behind the water into a hidden bat cave — Chi Phat became Cambodia's first community-run ecotourism project, turning a former poaching village into one protecting its own forest.",
-  13:`The mysterious burial jars and wooden coffins ${NAME_SAFE} passes today are hidden deep in the forest — nobody is certain which people left them there, or exactly how old they are.`,
-  14:`Tonight ${NAME_SAFE} sleeps in a hammock under jungle stars near the O'Malu waterfall — with almost no light pollution out here, the Milky Way is properly visible.`,
+  // Days 5-14 were re-mapped from a stale earlier draft of this itinerary — the text had been
+  // written before the 2-day Dubai delay and the trek's compression from 4 days to 3 days, so
+  // most of these facts were landing a day (or two) early against today's actual day numbers.
+  // Re-matched against each day's own summary text; two facts (village primary school, and a
+  // hammock night "near the O'Malu waterfall") didn't correspond to anything in the current
+  // 3-day trek and have been dropped rather than guessed at. Best-effort, not confirmed with
+  // True Adventure — flag if any of this reads wrong on the day.
+  5:"The Silver Pagoda inside Phnom Penh's Royal Palace is named for its floor — over 5,000 solid silver tiles, most kept carpeted to protect them from centuries of footsteps.",
+  6:"Angkor Wat was built ~900 years ago without cranes or mortar — millions of sandstone blocks floated in on rafts and fitted so tightly no cement was needed.",
+  7:"Angkor Wat is the only major temple at the Angkor complex that faces west instead of east — an unusual orientation historians still debate the reason for, though it makes for a dramatic reflection in the pool at sunrise instead of sunset.",
+  8:`'FAITH garden' is Better Lives' name for the family vegetable plots ${NAME_SAFE} is helping build today — designed to give a family a steady, self-sufficient food supply all year round.`,
+  9:"Insect-repellent spray made from local plants is a favourite trick in organic farming here — it protects the vegetables without any chemicals a family can't afford to keep buying.",
+  10:"The whole village is officially behind this project — local leaders arranged skilled community members to help, so today is as much a village event as a build day.",
+  11:`Fish amok, Cambodia's national dish, is a coconut fish curry steamed in banana leaves — ${NAME_SAFE} might try it at the night market tonight.`,
+  12:"The Cardamom Mountains sprawl over 4.4 million hectares — the largest rainforest in Southeast Asia. Today's boat ride up the Preak Piphot River often spots monkeys, flying squirrels and all kinds of birds.",
+  13:"At O'Spot waterfall today, you can actually walk behind the water into a hidden bat cave — Chi Phat became Cambodia's first community-run ecotourism project, turning a former poaching village into one protecting its own forest.",
+  14:`The mysterious burial jars and wooden coffins ${NAME_SAFE} passes today are hidden deep in the forest — nobody is certain which people left them there, or exactly how old they are.`,
   15:`By tonight ${NAME_SAFE} will have trekked an estimated ~45km in three days — nearly a marathon and a half through jungle in tropical heat — finishing with a celebratory dinner back in the Chi Phat community that first welcomed ${P.obj}. True Adventure confirmed the trek is now 3 days rather than 4; exact daily distances aren't confirmed yet, so this total is still an estimate.`,
   16:"Phnom Penh means 'Penh's Hill' — legend says a widow named Penh found sacred statues in a floating tree and built a temple on the hill.",
   17:`Crossing at Bavet/Moc Bai, ${NAME_SAFE} goes from the Kingdom of Wonder to Vietnam — where Ben Thanh Market in Ho Chi Minh City has stood since 1914 and you can barter for almost anything.`,
