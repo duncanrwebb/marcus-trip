@@ -827,16 +827,22 @@ if (currentDay && status==="during"){
       </div>`;
     return;
   }
-  // km completed = sum of full trek days finished + assume today's distance completes by evening (18:00 local)
+  // km completed = sum of full trek days finished + today's estimated intra-day progress.
+  // Anchored to each trek day's own Cambodia-local date/time (08:00-17:00, fixed +07:00 —
+  // Cambodia has no DST), not to "the current hour in Cambodia" or to currentDayNum. Those
+  // reset at different moments (Cambodia midnight vs UK midnight, ~6-7h apart), so a version
+  // keyed off either one made the displayed km drop back down for several hours overnight —
+  // e.g. showing full progress through Cambodia's evening, then reverting to just the previous
+  // day's total once Cambodia passed midnight but the UK day count hadn't rolled over yet. This
+  // version only ever increases: it's a direct comparison of "now" against fixed points in time.
+  const now = new Date();
   let km = 0;
-  const hLocal = parseInt(new Intl.DateTimeFormat("en-GB",{ timeZone:"Asia/Phnom_Penh", hour:"2-digit", hour12:false }).format(new Date()));
   for (let d=firstTrekDay; d<=lastTrekDay; d++){
-    if (status==="after" || currentDayNum>d) km += TREK_KM[d];
-    else if (currentDayNum===d){
-      // rough intra-day estimate: trekking ~08:00-17:00
-      const frac = Math.min(1, Math.max(0, (hLocal-8)/9));
-      km += Math.round(TREK_KM[d]*frac);
-    }
+    const day = DAYS.find(x=>x.n===d);
+    const dayStart = new Date(day.date+"T08:00:00+07:00");
+    const dayEnd = new Date(day.date+"T17:00:00+07:00");
+    if (now >= dayEnd) km += TREK_KM[d];
+    else if (now > dayStart) km += Math.round(TREK_KM[d] * (now-dayStart)/(dayEnd-dayStart));
   }
   km = Math.min(km, TREK_TOTAL);
   const pct = Math.round((km/TREK_TOTAL)*100);
