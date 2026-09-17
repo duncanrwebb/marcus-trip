@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Expedition Log</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <link rel="manifest" href="data:application/json,{%22name%22:%22Marcus%27s%20Expedition%20Log%22,%22short_name%22:%22Expedition%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F6F1E7%22,%22theme_color%22:%221B4332%22}" />
@@ -16,26 +16,42 @@
   a { color:#A63D40; }
   .hero { background:linear-gradient(180deg,#1B4332 0%,#123324 100%); color:#F6F1E7; padding:28px 20px 24px; border-bottom-left-radius:28px; border-bottom-right-radius:28px; }
   .tab-panel.hero { border-radius:24px; margin-top:2px; }
-  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:1.5px; text-transform:uppercase; color:#C9A66B; }
-  h1.title { font-family:'Fraunces',serif; font-size:34px; font-weight:700; margin:6px 0 4px; line-height:1.1; }
-  .subtitle { font-size:17px; opacity:.85; margin:0 0 16px; }
-  .banner { background:rgba(201,166,107,.15); border:1px solid rgba(201,166,107,.4); border-radius:12px; padding:10px 14px; font-size:16px; line-height:1.5; margin-bottom:16px; }
-  .progress-label { font-family:'JetBrains Mono',monospace; font-size:16px; margin-bottom:6px; }
+  .eyebrow { font-family:'JetBrains Mono',monospace; font-size:calc(14px * var(--fs)); letter-spacing:1.5px; text-transform:uppercase; color:#C9A66B; }
+  h1.title { font-family:'Fraunces',serif; font-size:calc(34px * var(--fs)); font-weight:700; margin:6px 0 4px; line-height:1.1; }
+  .subtitle { font-size:calc(17px * var(--fs)); opacity:.85; margin:0 0 16px; }
+  .banner { background:rgba(201,166,107,.15); border:1px solid rgba(201,166,107,.4); border-radius:12px; padding:10px 14px; font-size:calc(16px * var(--fs)); line-height:1.5; margin-bottom:16px; }
+  .progress-label { font-family:'JetBrains Mono',monospace; font-size:calc(16px * var(--fs)); margin-bottom:6px; }
   .progress-track { height:8px; background:rgba(255,255,255,.15); border-radius:8px; overflow:hidden; }
   .progress-fill { height:100%; background:#C9A66B; border-radius:8px; transition:width .4s ease; }
   main { padding:22px 16px 0; max-width:640px; margin:0 auto; }
 
-  .tabbar-wrap { position:sticky; top:0; z-index:20; }
+  :root { --fs: 1; }   /* viewer's text size, set from the Aa control */
+  .tabbar-wrap { position:sticky; top:0; z-index:20; display:flex; align-items:center; background:#F6F1E7; border-bottom:1.5px solid #E4DCC8; }
+  .tabbar-wrap .tabbar { flex:1; min-width:0; border-bottom:0; }
+  /* Not scaled with --fs: it has to stay findable by exactly the people whose
+     text is currently too small to read. */
+  .textsize-btn { flex-shrink:0; margin-right:10px; min-width:44px; min-height:44px; border-radius:22px;
+    border:1.5px solid #C9BFA6; background:#fff; color:#3A3F3B; cursor:pointer;
+    font-family:'Fraunces',Georgia,serif; font-size:18px; font-weight:700; }
+  .textsize-btn[aria-expanded="true"] { background:#1B4332; border-color:#1B4332; color:#F6F1E7; }
+  .textsize-panel { position:absolute; right:10px; top:calc(100% + 6px); background:#fff; border:1.5px solid #C9BFA6;
+    border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,.16); padding:12px; width:min(280px, calc(100vw - 20px)); z-index:30; }
+  .textsize-panel h2 { font-size:17px; margin:0 0 8px; font-family:'Inter',sans-serif; color:#1F2421; }
+  .textsize-panel .ts-opts { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .textsize-panel button { min-height:52px; border-radius:10px; border:1.5px solid #C9BFA6; background:#fff;
+    cursor:pointer; font-family:'Fraunces',Georgia,serif; font-weight:700; color:#3A3F3B; line-height:1; }
+  .textsize-panel button[aria-pressed="true"] { background:#1B4332; border-color:#1B4332; color:#F6F1E7; }
+  .textsize-panel p { font-size:15px; margin:10px 0 0; color:#6B6455; line-height:1.45; }
   .tabbar { position:relative; display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:#F6F1E7; border-bottom:1.5px solid #E4DCC8; padding:10px 12px; scrollbar-width:none; }
   .tabbar::-webkit-scrollbar { display:none; }
-  .tab-btn { flex-shrink:0; background:#fff; border:1.5px solid #C9BFA6; border-radius:20px; padding:9px 16px; font-size:14px; font-weight:600; color:#3A3F3B; cursor:pointer; min-height:44px; font-family:'Inter',sans-serif; white-space:nowrap; }
+  .tab-btn { flex-shrink:0; background:#fff; border:1.5px solid #C9BFA6; border-radius:20px; padding:9px 16px; font-size:calc(14px * var(--fs)); font-weight:600; color:#3A3F3B; cursor:pointer; min-height:44px; font-family:'Inter',sans-serif; white-space:nowrap; }
   .tab-btn[aria-selected="true"] { background:#1B4332; border-color:#1B4332; color:#F6F1E7; }
   .tabbar-fade { position:absolute; top:0; bottom:1.5px; width:30px; pointer-events:none; z-index:1; opacity:0; transition:opacity .15s ease; }
   .tabbar-fade-left { left:0; background:linear-gradient(to right, #F6F1E7, rgba(246,241,231,0)); }
-  .tabbar-fade-right { right:0; background:linear-gradient(to left, #F6F1E7, rgba(246,241,231,0)); }
+  .tabbar-fade-right { right:54px; background:linear-gradient(to left, #F6F1E7, rgba(246,241,231,0)); }
   .tab-panel { display:none; }
   .tab-panel.active { display:block; }
-  h3.section { font-family:'Fraunces',serif; font-size:22px; margin:26px 0 12px; }
+  h3.section { font-family:'Fraunces',serif; font-size:calc(22px * var(--fs)); margin:26px 0 12px; }
   #mapWrapper { position:relative; }
   #map { height:380px; border-radius:16px; border:1.5px solid #E4DCC8; position:relative; left:50%; transform:translateX(-50%); }
   .map-resize-handle { display:none; position:absolute; right:6px; bottom:6px; width:30px; height:30px; border-radius:8px; background:rgba(27,67,50,0.85); color:#fff; align-items:center; justify-content:center; font-size:16px; cursor:nwse-resize; z-index:500; user-select:none; box-shadow:0 2px 6px rgba(0,0,0,.3); }
@@ -43,7 +59,7 @@
   .map-resize-handle:hover { background:#1B4332; }
   .map-controls { background:#FBF8F1; border:1.5px solid #E4DCC8; border-top:none; border-bottom-left-radius:16px; border-bottom-right-radius:16px; padding:12px 14px; margin-top:-1px; }
   .map-controls .chip-row { display:flex; flex-wrap:wrap; gap:8px; }
-  .map-controls .chip { display:flex; align-items:center; gap:6px; font-size:16px; padding:11px 14px; border-radius:22px; border:1.5px solid #C9BFA6; background:#fff; cursor:pointer; user-select:none; min-height:44px; }
+  .map-controls .chip { display:flex; align-items:center; gap:6px; font-size:calc(16px * var(--fs)); padding:11px 14px; border-radius:22px; border:1.5px solid #C9BFA6; background:#fff; cursor:pointer; user-select:none; min-height:44px; }
   .map-controls .chip.off { opacity:.45; text-decoration:line-through; }
   .map-controls .chip input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; clip:rect(0 0 0 0); }
   .map-controls .chip:focus-within { outline:3px solid #1B4332; outline-offset:2px; }
@@ -51,86 +67,90 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation:none !important; transition:none !important; }
   }
-  .map-controls .hint { font-size:14px; color:#6B6455; margin:0 0 8px; }
-  .leaflet-popup-content { font-family:'Inter',sans-serif; font-size:16px; max-width:200px; }
-  .leaflet-popup-content b { font-family:'Fraunces',serif; font-size:17px; }
+  .map-controls .hint { font-size:calc(14px * var(--fs)); color:#6B6455; margin:0 0 8px; }
+  .leaflet-popup-content { font-family:'Inter',sans-serif; font-size:calc(16px * var(--fs)); max-width:200px; }
+  .leaflet-popup-content b { font-family:'Fraunces',serif; font-size:calc(17px * var(--fs)); }
   .day-row { display:flex; gap:14px; margin-bottom:12px; }
-  .past-days-toggle { display:block; width:100%; text-align:left; background:#FBF8F1; border:1.5px dashed #C9BFA6; border-radius:12px; padding:12px 16px; font-size:14px; font-weight:600; color:#6B6455; cursor:pointer; margin-bottom:12px; font-family:'Inter',sans-serif; min-height:44px; }
+  .past-days-toggle { display:block; width:100%; text-align:left; background:#FBF8F1; border:1.5px dashed #C9BFA6; border-radius:12px; padding:12px 16px; font-size:calc(14px * var(--fs)); font-weight:600; color:#6B6455; cursor:pointer; margin-bottom:12px; font-family:'Inter',sans-serif; min-height:44px; }
   .past-days-toggle:hover { border-color:#1B4332; color:#1B4332; }
   .dot { flex-shrink:0; width:34px; height:34px; border-radius:50%; border:2px solid #1B4332; background:#fff; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; cursor:pointer; }
   .dot.today { background:#1B4332; color:#fff; }
   .dot.past { background:#B8AE99; border-color:#B8AE99; }
   .day-card { flex:1; background:#FBF8F1; border:1.5px solid #C9BFA6; border-radius:14px; padding:12px 14px; cursor:pointer; }
   .day-card.today { border-color:#1B4332; }
-  .day-head { display:flex; justify-content:space-between; font-size:14px; }
+  .day-head { display:flex; justify-content:space-between; font-size:calc(14px * var(--fs)); }
   .day-date { font-family:'JetBrains Mono',monospace; color:#6B6455; }
   .phase-tag { font-weight:600; }
-  .day-loc { font-size:18px; font-weight:600; margin-top:4px; }
+  .day-loc { font-size:calc(18px * var(--fs)); font-weight:600; margin-top:4px; }
   .day-body { margin-top:10px; display:none; }
   .day-body.open { display:block; }
   .day-photo { width:100%; height:130px; object-fit:cover; border-radius:10px; margin-bottom:8px; }
-  .day-summary { font-size:16px; line-height:1.5; margin:0 0 8px; color:#3A3F3B; }
-  .map-link { font-size:15px; font-weight:600; text-decoration:none; }
+  .day-summary { font-size:calc(16px * var(--fs)); line-height:1.5; margin:0 0 8px; color:#3A3F3B; }
+  .map-link { font-size:calc(15px * var(--fs)); font-weight:600; text-decoration:none; }
   .notes-section { margin-top:26px; background:#FBF8F1; border:1.5px solid #E4DCC8; border-radius:16px; padding:18px; }
-  .notes-hint { font-size:16px; color:#6B6455; line-height:1.5; }
+  .notes-hint { font-size:calc(16px * var(--fs)); color:#6B6455; line-height:1.5; }
   #printHeading { display:none; }
   .note-input-row { display:flex; gap:8px; margin:8px 0 14px; }
-  textarea#noteInput { flex:1; border-radius:10px; border:1.5px solid #E4DCC8; padding:10px; font-size:16px; font-family:'Inter',sans-serif; resize:vertical; }
-  button#saveNote { background:#1B4332; color:#F6F1E7; border:none; border-radius:10px; padding:0 20px; font-weight:600; font-size:17px; cursor:pointer; min-height:44px; }
+  textarea#noteInput { flex:1; border-radius:10px; border:1.5px solid #E4DCC8; padding:10px; font-size:calc(16px * var(--fs)); font-family:'Inter',sans-serif; resize:vertical; }
+  button#saveNote { background:#1B4332; color:#F6F1E7; border:none; border-radius:10px; padding:0 20px; font-weight:600; font-size:calc(17px * var(--fs)); cursor:pointer; min-height:44px; }
   .note-item { background:#fff; border-radius:10px; padding:8px 12px; border:1px solid #E4DCC8; margin-bottom:8px; }
   .note-item-row { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .note-text { flex:1; white-space:pre-wrap; }
-  .note-delete { flex-shrink:0; background:none; border:none; color:#8A6D3B; font-size:15px; cursor:pointer; line-height:1; padding:6px 8px; border-radius:6px; min-height:32px; min-width:32px; }
+  .note-delete { flex-shrink:0; background:none; border:none; color:#8A6D3B; font-size:calc(15px * var(--fs)); cursor:pointer; line-height:1; padding:6px 8px; border-radius:6px; min-height:32px; min-width:32px; }
   .note-delete:hover { background:#F6F1E7; }
-  .note-date { font-size:14px; color:#6B6455; margin-top:4px; font-family:'JetBrains Mono',monospace; }
-  footer { text-align:center; font-size:15px; color:#6B6455; margin-top:26px; line-height:1.5; }
+  .note-date { font-size:calc(14px * var(--fs)); color:#6B6455; margin-top:4px; font-family:'JetBrains Mono',monospace; }
+  footer { text-align:center; font-size:calc(15px * var(--fs)); color:#6B6455; margin-top:26px; line-height:1.5; }
   .current-card { background:#fff; color:#1F2421; border-radius:18px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.25); }
   .current-card img { width:100%; height:150px; object-fit:cover; display:block; }
   .current-card .inner { padding:16px; }
-  .phase-pill { display:inline-block; color:#fff; font-size:14px; font-weight:600; padding:3px 10px; border-radius:20px; margin-bottom:8px; }
-  .current-loc { font-family:'Fraunces',serif; font-size:24px; margin:0 0 6px; }
+  .phase-pill { display:inline-block; color:#fff; font-size:calc(14px * var(--fs)); font-weight:600; padding:3px 10px; border-radius:20px; margin-bottom:8px; }
+  .current-loc { font-family:'Fraunces',serif; font-size:calc(24px * var(--fs)); margin:0 0 6px; }
   @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(201,166,107,.6); } 50%{ box-shadow:0 0 0 8px rgba(201,166,107,0); } }
   .countdown-row { display:flex; gap:10px; margin:14px 0 0; }
   .countdown-box { flex:1; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 12px; text-align:center; }
-  .countdown-num { font-family:'Fraunces',serif; font-size:25px; font-weight:700; color:#C9A66B; line-height:1.1; white-space:nowrap; }
-  .countdown-lbl { font-size:14px; opacity:.8; margin-top:4px; }
-  .there-now { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 14px; margin-top:10px; font-size:16px; line-height:1.5; }
-  .there-now .tn-head { font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:1px; text-transform:uppercase; color:#C9A66B; margin-bottom:3px; }
-  .fun-fact { background:#FFF9EC; border:1.5px dashed #C9A66B; border-radius:10px; padding:8px 12px; font-size:15px; line-height:1.5; margin-top:8px; }
+  .countdown-num { font-family:'Fraunces',serif; font-size:calc(25px * var(--fs)); font-weight:700; color:#C9A66B; line-height:1.1; white-space:nowrap; }
+  .countdown-lbl { font-size:calc(14px * var(--fs)); opacity:.8; margin-top:4px; }
+  .there-now { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 14px; margin-top:10px; font-size:calc(16px * var(--fs)); line-height:1.5; }
+  .there-now .tn-head { font-family:'JetBrains Mono',monospace; font-size:calc(14px * var(--fs)); letter-spacing:1px; text-transform:uppercase; color:#C9A66B; margin-bottom:3px; }
+  .fun-fact { background:#FFF9EC; border:1.5px dashed #C9A66B; border-radius:10px; padding:8px 12px; font-size:calc(15px * var(--fs)); line-height:1.5; margin-top:8px; }
   .fun-fact b { color:#8A6D3B; }
-  .prompt-chip { display:inline-block; background:#fff; border:1.5px solid #C9BFA6; border-radius:22px; padding:11px 14px; font-size:16px; color:#3A3F3B; cursor:pointer; margin-bottom:8px; min-height:44px; }
+  .prompt-chip { display:inline-block; background:#fff; border:1.5px solid #C9BFA6; border-radius:22px; padding:11px 14px; font-size:calc(16px * var(--fs)); color:#3A3F3B; cursor:pointer; margin-bottom:8px; min-height:44px; }
   .prompt-chip:hover { border-color:#C9A66B; }
   .key-dates { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-  .key-date { display:flex; align-items:flex-start; gap:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:9px 12px; font-size:15px; }
+  .key-date { display:flex; align-items:flex-start; gap:10px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:9px 12px; font-size:calc(15px * var(--fs)); }
   .key-date.done { opacity:.45; text-decoration:line-through; }
-  .key-date .kd-when { font-family:'JetBrains Mono',monospace; font-size:13px; color:#C9A66B; flex:0 0 88px; line-height:1.4; padding-top:1px; }
+  /* At large sizes the fixed 88px date column holds about four characters a
+     line; put the date above the event instead. */
+  .ts-large .key-date { flex-direction:column; gap:3px; }
+  .ts-large .key-date .kd-when { flex:none; }
+  .key-date .kd-when { font-family:'JetBrains Mono',monospace; font-size:calc(13px * var(--fs)); color:#C9A66B; flex:0 0 88px; line-height:1.4; padding-top:1px; }
   .key-date .kd-label { flex:1; line-height:1.4; }
-  .right-now { background:#EFF5EF; border-left:4px solid #3F7248; border-radius:8px; padding:8px 12px; font-size:16px; line-height:1.5; margin:8px 0; }
+  .right-now { background:#EFF5EF; border-left:4px solid #3F7248; border-radius:8px; padding:8px 12px; font-size:calc(16px * var(--fs)); line-height:1.5; margin:8px 0; }
   .trek-progress { background:#FBF8F1; border:1.5px solid #E4DCC8; border-radius:16px; padding:16px 18px; margin-top:22px; }
-  .trek-progress h4 { font-family:'Fraunces',serif; font-size:19px; margin:0 0 4px; }
-  .trek-sub { font-size:14px; color:#575147; margin:0 0 10px; }
+  .trek-progress h4 { font-family:'Fraunces',serif; font-size:calc(19px * var(--fs)); margin:0 0 4px; }
+  .trek-sub { font-size:calc(14px * var(--fs)); color:#575147; margin:0 0 10px; }
   .trek-track { height:14px; background:#E4DCC8; border-radius:10px; overflow:hidden; position:relative; }
   .trek-fill { height:100%; background:linear-gradient(90deg,#3F7248,#1B4332); border-radius:10px; transition:width .5s ease; }
-  .trek-boots { position:absolute; top:-4px; font-size:18px; transform:translateX(-50%); transition:left .5s ease; }
-  .trek-stats { display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:14px; color:#6B6455; margin-top:6px; }
-  .trek-note { font-size:12.5px; color:#6B6455; line-height:1.5; margin:10px 0 0; padding-top:8px; border-top:1px dashed #C9BFA6; }
+  .trek-boots { position:absolute; top:-4px; font-size:calc(18px * var(--fs)); transform:translateX(-50%); transition:left .5s ease; }
+  .trek-stats { display:flex; justify-content:space-between; font-family:'JetBrains Mono',monospace; font-size:calc(14px * var(--fs)); color:#6B6455; margin-top:6px; }
+  .trek-note { font-size:calc(12.5px * var(--fs)); color:#6B6455; line-height:1.5; margin:10px 0 0; padding-top:8px; border-top:1px dashed #C9BFA6; }
 
   .info-card { background:#FBF8F1; border:1.5px solid #C9BFA6; border-radius:14px; padding:14px 16px; margin-bottom:12px; }
-  .info-card h4 { font-family:'Fraunces',serif; font-size:16px; margin:0 0 6px; display:flex; align-items:center; gap:6px; }
-  .info-card p, .info-card .placeholder { font-size:15px; line-height:1.6; margin:0 0 8px; color:#3A3F3B; white-space:pre-wrap; }
+  .info-card h4 { font-family:'Fraunces',serif; font-size:calc(16px * var(--fs)); margin:0 0 6px; display:flex; align-items:center; gap:6px; }
+  .info-card p, .info-card .placeholder { font-size:calc(15px * var(--fs)); line-height:1.6; margin:0 0 8px; color:#3A3F3B; white-space:pre-wrap; }
   .info-card .placeholder { color:#6B6455; font-style:italic; }
-  .info-card textarea, .info-card input[type=url], .info-card input[type=text] { width:100%; border-radius:8px; border:1.5px solid #C9BFA6; padding:8px 10px; font-size:15px; font-family:'Inter',sans-serif; resize:vertical; margin-bottom:8px; box-sizing:border-box; }
-  .card-btn { background:#1B4332; color:#F6F1E7; border:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; cursor:pointer; min-height:40px; }
+  .info-card textarea, .info-card input[type=url], .info-card input[type=text] { width:100%; border-radius:8px; border:1.5px solid #C9BFA6; padding:8px 10px; font-size:calc(16px * var(--fs)); font-family:'Inter',sans-serif; resize:vertical; margin-bottom:8px; box-sizing:border-box; }
+  .card-btn { background:#1B4332; color:#F6F1E7; border:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:calc(14px * var(--fs)); cursor:pointer; min-height:40px; }
   .card-btn.secondary { background:none; color:#1B4332; border:1.5px solid #1B4332; }
-  .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:14px; }
+  .card-btn.link { display:inline-block; background:#1B4332; color:#F6F1E7; text-decoration:none; border-radius:8px; padding:9px 14px; font-weight:600; font-size:calc(14px * var(--fs)); }
 
-  .wa-link { font-size:14px; font-weight:600; text-decoration:none; color:#3F7248; margin-left:14px; }
-  .flight-row { border-top:1px solid #E4DCC8; padding:12px 0; font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .wa-link { font-size:calc(14px * var(--fs)); font-weight:600; text-decoration:none; color:#3F7248; margin-left:14px; }
+  .flight-row { border-top:1px solid #E4DCC8; padding:12px 0; font-size:calc(14px * var(--fs)); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .flight-row:first-of-type { border-top:none; padding-top:0; }
   .flight-info { flex:1; min-width:180px; }
-  .flight-main { font-size:15px; }
-  .flight-times { color:#6B6455; font-family:'JetBrains Mono',monospace; font-size:12.5px; margin-top:3px; }
-  .flight-status { font-weight:600; margin-top:3px; font-size:13px; }
+  .flight-main { font-size:calc(15px * var(--fs)); }
+  .flight-times { color:#6B6455; font-family:'JetBrains Mono',monospace; font-size:calc(12.5px * var(--fs)); margin-top:3px; }
+  .flight-status { font-weight:600; margin-top:3px; font-size:calc(13px * var(--fs)); }
   .flight-row.live .flight-status { color:#3F7248; }
   .flight-row.done .flight-status { color:#8A6D3B; }
   .flight-track-btn { background:#fff; color:#1B4332; border:1.5px solid #1B4332; white-space:nowrap; flex-shrink:0; align-self:center; width:auto; }
@@ -140,14 +160,14 @@
   @keyframes flightPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(63,114,72,.5); } 50%{ box-shadow:0 0 0 7px rgba(63,114,72,0); } }
 
   .notes-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
-  .ghost-btn { background:#fff; border:1.5px solid #C9BFA6; border-radius:10px; padding:9px 14px; font-size:14px; font-weight:600; color:#1B4332; cursor:pointer; min-height:44px; }
+  .ghost-btn { background:#fff; border:1.5px solid #C9BFA6; border-radius:10px; padding:9px 14px; font-size:calc(14px * var(--fs)); font-weight:600; color:#1B4332; cursor:pointer; min-height:44px; }
 
   @media print {
     .tabbar-wrap, #infoCards, #map, .map-controls, #trekProgress, h3.section, #timeline, .note-input-row, #promptChip, .notes-actions, footer { display:none !important; }
     .tab-panel { display:none !important; }
     .tab-panel[data-tab="messages"] { display:block !important; }
     .notes-section { border:none; background:none; padding:0; }
-    #printHeading { display:block !important; font-family:'Fraunces',serif; font-size:22px; margin-bottom:14px; }
+    #printHeading { display:block !important; font-family:'Fraunces',serif; font-size:calc(22px * var(--fs)); margin-bottom:14px; }
     .note-item { break-inside:avoid; border:1px solid #ccc; }
     .note-delete { display:none !important; }
   }
@@ -166,6 +186,9 @@
 </nav>
 <div class="tabbar-fade tabbar-fade-left" id="tabFadeLeft" aria-hidden="true"></div>
 <div class="tabbar-fade tabbar-fade-right" id="tabFadeRight" aria-hidden="true"></div>
+<button type="button" class="textsize-btn" id="textSizeBtn" aria-haspopup="true"
+        aria-expanded="false" aria-controls="textSizePanel" aria-label="Text size">Aa</button>
+<div class="textsize-panel" id="textSizePanel" role="group" aria-label="Text size" hidden></div>
 </div>
 
 <main>
@@ -261,6 +284,62 @@ const DEPARTURE_MOMENT = "2026-07-17T10:30:00+01:00";
 // so localStorage is otherwise shared between them.
 const STORAGE_PREFIX = "marcus-trip-";
 function storageKey(name){ return STORAGE_PREFIX + name; }
+
+/* --- Text size -------------------------------------------------------------
+   Every reader-facing font size is calc(Npx * var(--fs)), so this one variable
+   scales them all. Saved on the viewer's own device only. Pinch-zoom works too,
+   but zoom makes the page wider than the screen; scaled text wraps to fit. */
+const TEXT_SIZES = [
+  { v: 1,    label: "Standard" },
+  { v: 1.15, label: "Large" },
+  { v: 1.3,  label: "Larger" },
+  { v: 1.5,  label: "Largest" },
+];
+const TEXT_KEY = storageKey("text-size");
+function applyTextSize(v){
+  document.documentElement.style.setProperty("--fs", String(v));
+  document.documentElement.classList.toggle("ts-large", v >= 1.3);
+}
+(function(){
+  let v = 1;
+  try { v = parseFloat(localStorage.getItem(TEXT_KEY)) || 1; } catch(e){}
+  if (!TEXT_SIZES.some(t => t.v === v)) v = 1;
+  applyTextSize(v);
+})();
+(function initTextSizeControl(){
+  const btn = document.getElementById("textSizeBtn");
+  const panel = document.getElementById("textSizePanel");
+  if (!btn || !panel) return;
+  const current = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fs")) || 1;
+  const draw = () => {
+    panel.innerHTML = `<h2>Text size</h2><div class="ts-opts">` +
+      TEXT_SIZES.map(t => `<button type="button" data-fs="${t.v}" aria-pressed="${t.v === current()}"
+        aria-label="${t.label}" style="font-size:${Math.round(15 * t.v)}px">A</button>`).join("") +
+      `</div><p>Saved on this phone only. Pinch to zoom still works too.</p>`;
+    panel.querySelectorAll("[data-fs]").forEach(b => b.addEventListener("click", () => {
+      const v = parseFloat(b.dataset.fs);
+      applyTextSize(v);
+      try { localStorage.setItem(TEXT_KEY, String(v)); } catch(e){}
+      // Updated in place: redrawing detaches the tapped button, and the
+      // tap-outside handler then closes the panel mid-comparison.
+      panel.querySelectorAll("[data-fs]").forEach(o =>
+        o.setAttribute("aria-pressed", String(parseFloat(o.dataset.fs) === v)));
+      if (window.__tripMap && window.__tripMap.invalidateSize) window.__tripMap.invalidateSize();
+    }));
+  };
+  const open = yes => {
+    panel.hidden = !yes;
+    btn.setAttribute("aria-expanded", String(yes));
+    if (yes){ draw(); const on = panel.querySelector('[aria-pressed="true"]'); if (on) on.focus(); }
+  };
+  btn.addEventListener("click", () => open(panel.hidden));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !panel.hidden){ open(false); btn.focus(); }
+  });
+  document.addEventListener("click", e => {
+    if (!panel.hidden && !panel.contains(e.target) && e.target !== btn) open(false);
+  });
+})();
 
 /* ---------------- Personalization (name & pronouns) ---------------- */
 // Defaults to Marcus/he so this exact file keeps working as-is. Any family can change this
@@ -399,9 +478,9 @@ async function updateLiveFlightStatus(){
       if (live.depDelayMin >= 10){
         const h = Math.floor(live.depDelayMin/60), m = live.depDelayMin%60;
         const delayStr = h>0 ? `${h}h ${m}m` : `${m}m`;
-        row.innerHTML = `${row.dataset.baseLabel} · <b style="color:#A63D40">Delayed ${delayStr}</b> <span style="font-size:12px;color:#6B6455">(live)</span>`;
+        row.innerHTML = `${row.dataset.baseLabel} · <b style="color:#A63D40">Delayed ${delayStr}</b> <span style="font-size:calc(12px * var(--fs));color:#6B6455">(live)</span>`;
       } else {
-        row.innerHTML = `${row.dataset.baseLabel} <span style="font-size:12px;color:#3F7248">(on time · live)</span>`;
+        row.innerHTML = `${row.dataset.baseLabel} <span style="font-size:calc(12px * var(--fs));color:#3F7248">(on time · live)</span>`;
       }
     }
   } finally {
@@ -761,7 +840,7 @@ document.getElementById("progressFill").style.width =
 (function(){
   const el = document.getElementById("keyDates");
   const today = new Date().toISOString().slice(0,10);
-  el.innerHTML = `<div class="tn-head" style="font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:#C9A66B;">Key moments to expect news</div>` +
+  el.innerHTML = `<div class="tn-head" style="font-family:'JetBrains Mono',monospace;font-size:calc(14px * var(--fs));letter-spacing:1px;text-transform:uppercase;color:#C9A66B;">Key moments to expect news</div>` +
     KEY_DATES.map(k=>`<div class="key-date ${today>k.d?'done':''}"><span class="kd-when">${k.when}</span><span class="kd-label">${k.label}</span></div>`).join('');
 })();
 
@@ -788,7 +867,7 @@ if (currentDay && status==="during"){
         <span class="phase-pill" style="background:${p.color}">${p.icon} ${p.label}</span>
         <h2 class="current-loc">${currentDay.loc}</h2>
         ${rightNowLine(currentDay.n)}
-        <p style="font-size:17px;line-height:1.5;margin:0;color:#3A3F3B">${currentDay.summary}</p>
+        <p style="font-size:calc(17px * var(--fs));line-height:1.5;margin:0;color:#3A3F3B">${currentDay.summary}</p>
         <div class="fun-fact"><b>Today's fact:</b> ${FACTS[currentDay.n]||""}</div>
         <a class="wa-link" style="display:inline-block;margin:8px 0 0;" href="https://wa.me/?text=${encodeURIComponent(`📍 Day ${currentDay.n}: ${currentDay.loc}\n${currentDay.summary}`)}" target="_blank" rel="noreferrer">Share on WhatsApp ↗</a>
       </div>
@@ -872,6 +951,7 @@ document.addEventListener('click', (e)=>{
 }, true);
 
 const map = L.map('map', { scrollWheelZoom:false, closePopupOnClick:true });
+window.__tripMap = map;   // so a text-size change can ask it to re-measure
 // Leaflet's popup ✕ is an <a href="#..."> which some viewers intercept with an "Open Link"
 // prompt — disable it globally; tapping anywhere on the map closes popups instead.
 L.Popup.mergeOptions({ closeButton:false });
@@ -964,7 +1044,7 @@ const mapTypeControl = L.control({ position:'topright' });
 mapTypeControl.onAdd = function(){
   const div = L.DomUtil.create('div');
   L.DomEvent.disableClickPropagation(div);
-  div.style.cssText = 'display:flex;background:#fff;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);overflow:hidden;font-family:Inter,sans-serif;font-size:13px;font-weight:600;';
+  div.style.cssText = 'display:flex;background:#fff;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.2);overflow:hidden;font-family:Inter,sans-serif;font-size:calc(13px * var(--fs));font-weight:600;';
   div.innerHTML = `
     <button type="button" id="mapTypeStreet" style="border:none;background:#1B4332;color:#F6F1E7;padding:8px 14px;cursor:pointer;">Map</button>
     <button type="button" id="mapTypeSat" style="border:none;background:#fff;color:#3A3F3B;padding:8px 14px;cursor:pointer;">Satellite</button>`;
@@ -1272,7 +1352,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       <h4>✈️ Flights</h4>
       ${FLIGHTS.length - upcoming.length > 0 ? `<p class="placeholder" style="margin-bottom:8px;">${FLIGHTS.length - upcoming.length} of ${FLIGHTS.length} completed — only showing what's ahead.</p>` : ""}
       <p class="placeholder" style="margin-bottom:4px;">Tap "Track live" for the real position via Flightradar24.</p>
-      <p id="liveCheckedNote" class="placeholder" style="font-size:12px;margin:0 0 10px;"></p>
+      <p id="liveCheckedNote" class="placeholder" style="font-size:calc(12px * var(--fs));margin:0 0 10px;"></p>
       ${rows}
     </div>`;
   }
@@ -1281,7 +1361,7 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
     if (status !== "before") return ""; // only relevant pre-departure
     return `<div class="info-card">
       <h4>✅ Before you go</h4>
-      <ul style="margin:0 0 4px;padding-left:20px;font-size:15px;line-height:1.7;color:#3A3F3B;">
+      <ul style="margin:0 0 4px;padding-left:20px;font-size:calc(15px * var(--fs));line-height:1.7;color:#3A3F3B;">
         <li><b>Cambodia E-arrival QR code</b> — can be done from 12 Jul. Bring 2 photocopies to kit check.</li>
         <li><b>Pre-departure meeting</b> — Thu 16 Jul, 12:30&ndash;3:00pm, 6th Form Common Room. Led by the Expedition Leaders, <b>all students must attend</b> — bring day rucksack, large rucksack, and passport.</li>
         <li><b>3 passport photos</b> — one handed in at kit check, two kept by ${NAME_SAFE} in a (ideally waterproof) document wallet with passport, visa &amp; QR code.</li>
@@ -1359,10 +1439,10 @@ document.getElementById("printNotes").addEventListener("click", ()=> window.prin
       return `<div class="info-card">
         <h4>⚙️ Whose trip is this?</h4>
         <p class="placeholder" style="margin-bottom:10px;">This app is built for the George Abbot T2 2026 itinerary — any family on the same trip can use their own copy of this file and personalize it here.</p>
-        <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">Name</label>
+        <label style="display:block;font-size:calc(14px * var(--fs));font-weight:600;margin-bottom:4px;">Name</label>
         <input type="text" id="personNameInput" aria-label="Traveler's name" value="${NAME_SAFE}" maxlength="40">
-        <label style="display:block;font-size:14px;font-weight:600;margin-bottom:4px;">Pronouns</label>
-        <select id="personPronounInput" aria-label="Traveler's pronouns" style="width:100%;border-radius:8px;border:1.5px solid #C9BFA6;padding:8px 10px;font-size:15px;font-family:'Inter',sans-serif;margin-bottom:8px;">
+        <label style="display:block;font-size:calc(14px * var(--fs));font-weight:600;margin-bottom:4px;">Pronouns</label>
+        <select id="personPronounInput" aria-label="Traveler's pronouns" style="width:100%;border-radius:8px;border:1.5px solid #C9BFA6;padding:8px 10px;font-size:calc(15px * var(--fs));font-family:'Inter',sans-serif;margin-bottom:8px;">
           <option value="he" ${PRONOUN_KEY==="he"?"selected":""}>He / him</option>
           <option value="she" ${PRONOUN_KEY==="she"?"selected":""}>She / her</option>
           <option value="they" ${PRONOUN_KEY==="they"?"selected":""}>They / them</option>
