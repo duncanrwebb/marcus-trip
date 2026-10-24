@@ -4,31 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Expedition Log has moved</title>
-<meta http-equiv="refresh" content="4; url=https://cambodia.duncanrwebb.com/">
+<title>Expedition Log</title>
+<meta http-equiv="refresh" content="0; url=https://duncanrwebb.github.io/expedition-tracker/">
 <style>
-  :root { --bg:#f5f1e8; --text:#1d2b22; --muted:#5b665e; --accent:#24432f; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141a16; --text:#e6ebe7; --muted:#9aa59d; --accent:#8fc39f; } }
+  :root { --bg:#f5f1e8; --text:#1d2b22; --accent:#24432f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141a16; --text:#e6ebe7; --accent:#8fc39f; } }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); color:var(--text);
-         font:17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; padding:24px; box-sizing:border-box; }
-  main { max-width:420px; text-align:center; }
-  h1 { font-size:26px; margin:0 0 10px; }
-  p { margin:0 0 14px; color:var(--muted); }
-  a.go { display:inline-block; margin-top:6px; background:var(--accent); color:var(--bg); text-decoration:none; font-weight:600; padding:12px 20px; border-radius:10px; }
+         font:17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; padding:24px; box-sizing:border-box; text-align:center; }
+  a { color:var(--accent); font-weight:600; }
 </style>
 </head>
 <body>
-<main>
-  <h1>The Expedition Log has moved</h1>
-  <p>The Cambodia &amp; Vietnam expedition is over. Its app is kept as a keepsake at a new address, with a password: ask whoever sent you the link.</p>
-  <a class="go" href="https://cambodia.duncanrwebb.com/">Go to the keepsake</a>
-  <p style="margin-top:18px;font-size:14px">If you added the old one to your home screen, you can delete that icon and add the new address instead.</p>
-</main>
+<p>Opening the Expedition Log… <a href="https://duncanrwebb.github.io/expedition-tracker/">tap here</a> if it doesn't.</p>
 <script>
-  // Phones that had the old app installed keep a service worker for it; the new
-  // sw.js here removes itself, and this makes sure it is asked to.
+  // The app that lived here is now the one at /expedition-tracker/ (same site,
+  // so messages saved on this phone carry across). This page's sw.js removes
+  // the old app's saved copy.
   if ("serviceWorker" in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.update().catch(() => {}))).catch(() => {});
-  setTimeout(() => { location.replace("https://cambodia.duncanrwebb.com/"); }, 4000);
+  location.replace("https://duncanrwebb.github.io/expedition-tracker/");
 </script>
 </body>
 </html>
